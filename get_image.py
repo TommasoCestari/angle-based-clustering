@@ -40,7 +40,7 @@ except Exception as e:
 
 # Build the request
 request_all_bands = all_bands_request(
-    aoi_bbox, (184, 283), config, start_time, end_time)
+    aoi_bbox, aoi_size, config, start_time, end_time)
 
 # Fetch the data
 try:

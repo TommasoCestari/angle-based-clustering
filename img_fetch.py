@@ -53,10 +53,10 @@ def get_aoi_bbox_and_size(bbox: list, resolution: int = 10) -> tuple:
 
 
 def all_bands_request(aoi_bbox: BBox,
-                                        aoi_size: tuple,
-                                        config: SHConfig,
-                                        start_time_single_image: str = "2024-05-01",
-                                        end_time_single_image: str = "2024-05-20") -> SentinelHubRequest:
+                        aoi_size: tuple,
+                        config: SHConfig,
+                        start_time_single_image: str = "2024-05-01",
+                        end_time_single_image: str = "2024-05-20") -> SentinelHubRequest:
     """
     Creates a SentinelHubRequest object to retrieve a true color satellite image
     from the Sentinel-2 Level-2A data collection for a given area of interest (AOI)
