@@ -1,3 +1,6 @@
+import numpy as np
+import rasterio
+from rasterio.transform import from_bounds
 from sentinelhub import (
     
     SentinelHubRequest,
@@ -56,7 +59,7 @@ def all_bands_request(aoi_bbox: BBox,
                         aoi_size: tuple,
                         config: SHConfig,
                         start_time_single_image: str = "2024-05-01",
-                        end_time_single_image: str = "2024-05-20") -> SentinelHubRequest:
+                        end_time_single_image: str = "2024-05-20") -> np.ndarray:
     """
     Creates a SentinelHubRequest object to retrieve a true color satellite image
     from the Sentinel-2 Level-2A data collection for a given area of interest (AOI)
@@ -83,11 +86,11 @@ def all_bands_request(aoi_bbox: BBox,
         return {
             input: [{
                 bands: ["B01","B02","B03","B04","B05","B06","B07",
-                        "B08","B8A","B09","B11","B12",
-                        "SCL"]
+                        "B08","B8A","B09","B11","B12"]
             }],
             output: {
-                bands: 13
+                bands: 12,
+                sampleType: "FLOAT32"
             }
         };
     }
@@ -95,7 +98,7 @@ def all_bands_request(aoi_bbox: BBox,
     function evaluatePixel(sample) {
         return [sample.B01, sample.B02, sample.B03, sample.B04, sample.B05,
                 sample.B06, sample.B07, sample.B08, sample.B8A, sample.B09,
-                sample.B11, sample.B12, sample.SCL];
+                sample.B11, sample.B12];
     }
     """
 
@@ -116,4 +119,59 @@ def all_bands_request(aoi_bbox: BBox,
         config=config,
     )
 
-    return request_all_bands
+    # Download the data
+    data = request_all_bands.get_data()[0]
+    return data
+
+
+def add_bands(image_data):
+    B01 = image_data[..., 0]
+    B02 = image_data[..., 1]
+    B03 = image_data[..., 2]
+    B04 = image_data[..., 3]
+    B05 = image_data[..., 4]
+    B06 = image_data[..., 5]
+    B07 = image_data[..., 6]
+    B08 = image_data[..., 7]
+    B8A = image_data[..., 8]
+    B09 = image_data[..., 9]
+    B11 = image_data[..., 10]
+    B12 = image_data[..., 11]
+
+    eps = 1e-10
+    NDVI = (B08 - B04) / (B08 + B04 + eps)
+    NDWI = (B03 - B11) / (B03 + B11 + eps)  # McFeeters version
+    NDSI = (B03 - B11) / (B03 + B11 + eps)
+
+    image_with_indices = np.dstack([image_data, NDVI, NDWI, NDSI])
+    return image_with_indices
+
+
+def save_tensor_as_tiff(path, tensor, aoi_bbox):
+
+    # tensor: (H, W, C)
+    H, W, C = tensor.shape
+
+    # rasterio requires: (C, H, W)
+    tensor = tensor.transpose(2, 0, 1).astype("float32")
+
+    # Extract coordinates from the BBox object
+    min_lon, min_lat = aoi_bbox.lower_left
+    max_lon, max_lat = aoi_bbox.upper_right
+
+    transform = from_bounds(min_lon, min_lat, max_lon, max_lat, W, H)
+
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=H,
+        width=W,
+        count=C,
+        dtype="float32",
+        crs="EPSG:4326",
+        transform=transform
+    ) as dst:
+        dst.write(tensor)
+
+    print(f"Saved stacked tensor TIFF to {path}")

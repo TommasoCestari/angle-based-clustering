@@ -1,6 +1,7 @@
 from sentinelhub import SHConfig, DownloadFailedException
 from dotenv import load_dotenv
-from img_fetch import GeoJson_to_bbox, get_aoi_bbox_and_size, all_bands_request
+import tifffile
+from img_fetch_utils import GeoJson_to_bbox, get_aoi_bbox_and_size, all_bands_request, add_bands, save_tensor_as_tiff
 
 # Load credentials
 load_dotenv()  
@@ -12,8 +13,8 @@ try:
 except Exception as e:
     raise SystemExit(f"[Config Error] {e}")
 
-start_time = "2024-12-12"
-end_time = "2024-12-18"
+start_time = "2025-06-13"
+end_time = "2025-06-13"
 
 # Convert GeoJson to bbox, get bbox and size
 GeoJson = {
@@ -39,15 +40,16 @@ except Exception as e:
     raise SystemExit(f"[BBox Error] Could not compute bbox/size: {e}")
 
 # Build the request
-request_all_bands = all_bands_request(
+image = all_bands_request(
     aoi_bbox, aoi_size, config, start_time, end_time)
 
-# Fetch the data
-try:
-    image_data = request_all_bands.get_data()
-except DownloadFailedException as e:
-    raise SystemExit(f"[SentinelHub Error] Download failed: {e}")
-except Exception as e:
-    raise SystemExit(f"[Unexpected Error] {e}")
+# Add NDVI, NDWI, NDSI
+full_tensor = add_bands(image)     # (H, W, 15)
 
-print("Image data: ", image_data)
+# Save full tensor with rasterio
+save_tensor_as_tiff("./sentinel_tensor.tiff", full_tensor, aoi_bbox)
+
+print("Final tensor shape:", full_tensor.shape)
+
+print(f"Dimension : {image.shape}")
+print(f"Dimension : {full_tensor.shape}")
