@@ -147,20 +147,39 @@ def add_bands(image_data):
     return image_with_indices
 
 
-def save_tensor_as_tiff(path, tensor, aoi_bbox):
+def save_tensor_as_tiff(tensor, aoi_bbox, path, scale_factor=1):
+    """
+    Save a multi-band tensor as a GeoTIFF, optionally upsampling to 10m resolution.
 
-    # tensor: (H, W, C)
+    Args:
+        tensor (np.ndarray): Input tensor, shape (H, W, C)
+        aoi_bbox (BBox): SentinelHub BBox object defining the area
+        path (str): Output file path
+        scale_factor (int): Upsampling factor; 1 = keep original resolution
+    """
+    import numpy as np
+    import rasterio
+    from rasterio.transform import from_bounds
+
     H, W, C = tensor.shape
 
-    # rasterio requires: (C, H, W)
-    tensor = tensor.transpose(2, 0, 1).astype("float32")
+    # Upsample if needed
+    if scale_factor > 1:
+        # Tensor shape: (H, W, C) -> (C, H, W) for rasterio
+        tensor = tensor.transpose(2, 0, 1)
+        tensor = np.repeat(np.repeat(tensor, scale_factor, axis=1), scale_factor, axis=2)
+        H, W = tensor.shape[1], tensor.shape[2]
+    else:
+        tensor = tensor.transpose(2, 0, 1).astype("float32")
 
-    # Extract coordinates from the BBox object
+    # Extract coordinates from AOI
     min_lon, min_lat = aoi_bbox.lower_left
     max_lon, max_lat = aoi_bbox.upper_right
 
+    # Build transform
     transform = from_bounds(min_lon, min_lat, max_lon, max_lat, W, H)
 
+    # Save GeoTIFF
     with rasterio.open(
         path,
         "w",
@@ -174,4 +193,4 @@ def save_tensor_as_tiff(path, tensor, aoi_bbox):
     ) as dst:
         dst.write(tensor)
 
-    print(f"Saved stacked tensor TIFF to {path}")
+    print(f"Saved stacked tensor TIFF to {path} (shape: {C} bands, {H}x{W})")
