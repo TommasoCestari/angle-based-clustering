@@ -5,6 +5,7 @@ from sentinelhub import (
     
     SentinelHubRequest,
     bbox_to_dimensions,
+    to_utm_bbox,
     DataCollection,
     SHConfig,
     MimeType,
@@ -33,29 +34,31 @@ def GeoJson_to_bbox(GeoJson: dict) -> list:
 
 def get_aoi_bbox_and_size(bbox: list, resolution: int = 10) -> tuple:
     """
-    Converts a bounding box in WGS84 format into a SentinelHub-compatible BBox object
-    and computes the corresponding image size in pixels at the given spatial resolution.
-
-    This function is typically used to prepare an area of interest (AOI) for a SentinelHub
-    request by wrapping the bounding box and computing the width and height (in pixels)
-    based on the desired resolution in meters.
+    Converts a bounding box in WGS84 format into a UTM BBox,
+    compute image size in pixels at the given spatial resolution.
 
     Args:
-        bbox (list or tuple): A list or tuple in the format [min_long, min_lat, max_long, max_lat].
+        bbox (list or tuple): [min_lon, min_lat, max_lon, max_lat]
         resolution (int, optional): Spatial resolution in meters per pixel. Default is 10.
 
     Returns:
         tuple:
-            - BBox: A SentinelHub BBox object in CRS.WGS84 format.
-            - tuple: Image size as (width, height) in pixels.
+            - BBox: SentinelHub BBox in UTM CRS
+            - tuple: Image size as (width, height)
     """
-    aoi_bbox = BBox(bbox=bbox, crs=CRS.WGS84)
-    aoi_size = bbox_to_dimensions(aoi_bbox, resolution=resolution)
+    # WGS84 BBox
+    aoi_bbox_wgs84 = BBox(bbox=bbox, crs=CRS.WGS84)
 
-    return aoi_bbox, aoi_size
+    # transform to UTM automatically
+    utm_bbox = to_utm_bbox(aoi_bbox_wgs84)
+
+    # compute size in pixels at 10m resolution
+    aoi_size = bbox_to_dimensions(utm_bbox, resolution=resolution)
+
+    return utm_bbox, aoi_size
 
 
-def all_bands_request(aoi_bbox: BBox,
+def all_bands_request(utm_bbox: BBox,
                         aoi_size: tuple,
                         config: SHConfig,
                         start_time_single_image: str = "2024-05-01",
@@ -114,7 +117,7 @@ def all_bands_request(aoi_bbox: BBox,
             )
         ],
         responses=[SentinelHubRequest.output_response("default", MimeType.TIFF)],
-        bbox=aoi_bbox,
+        bbox=utm_bbox,
         size=aoi_size,
         config=config,
     )
@@ -125,6 +128,20 @@ def all_bands_request(aoi_bbox: BBox,
 
 
 def add_bands(image_data):
+    """
+    Compute vegetation and water indices (NDVI, NDWI, NDSI) and append them
+    as additional bands to a multi-band Sentinel-2 image tensor.
+
+    The input image tensor should have shape (H, W, C) where C >= 12 (Sentinel-2 bands)
+
+    Args:
+        image_data (np.ndarray): Input image tensor with shape (H, W, C), dtype float32 or float64.
+
+    Returns:
+        np.ndarray: New image tensor with shape (H, W, C+3), where the last three bands
+                    are NDVI, NDWI, and NDSI respectively.
+    """
+
     B01 = image_data[..., 0]
     B02 = image_data[..., 1]
     B03 = image_data[..., 2]
@@ -147,7 +164,7 @@ def add_bands(image_data):
     return image_with_indices
 
 
-def save_tensor_as_tiff(tensor, aoi_bbox, path, scale_factor=1):
+def save_tensor_as_tiff(tensor, aoi_bbox, path):
     """
     Save a multi-band tensor as a GeoTIFF, optionally upsampling to 10m resolution.
 
@@ -157,27 +174,15 @@ def save_tensor_as_tiff(tensor, aoi_bbox, path, scale_factor=1):
         path (str): Output file path
         scale_factor (int): Upsampling factor; 1 = keep original resolution
     """
-    import numpy as np
-    import rasterio
-    from rasterio.transform import from_bounds
 
     H, W, C = tensor.shape
+    tensor = tensor.transpose(2, 0, 1).astype("float32")
 
-    # Upsample if needed
-    if scale_factor > 1:
-        # Tensor shape: (H, W, C) -> (C, H, W) for rasterio
-        tensor = tensor.transpose(2, 0, 1)
-        tensor = np.repeat(np.repeat(tensor, scale_factor, axis=1), scale_factor, axis=2)
-        H, W = tensor.shape[1], tensor.shape[2]
-    else:
-        tensor = tensor.transpose(2, 0, 1).astype("float32")
+    min_x, min_y = aoi_bbox.lower_left
+    max_x, max_y = aoi_bbox.upper_right
+    transform = from_bounds(min_x, min_y, max_x, max_y, W, H)
 
-    # Extract coordinates from AOI
-    min_lon, min_lat = aoi_bbox.lower_left
-    max_lon, max_lat = aoi_bbox.upper_right
-
-    # Build transform
-    transform = from_bounds(min_lon, min_lat, max_lon, max_lat, W, H)
+    rasterio_crs = f"EPSG:{aoi_bbox.crs.ogc_string().split(':')[-1]}"
 
     # Save GeoTIFF
     with rasterio.open(
@@ -188,7 +193,7 @@ def save_tensor_as_tiff(tensor, aoi_bbox, path, scale_factor=1):
         width=W,
         count=C,
         dtype="float32",
-        crs="EPSG:4326",
+        crs=rasterio_crs,
         transform=transform
     ) as dst:
         dst.write(tensor)

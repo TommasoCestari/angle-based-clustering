@@ -35,14 +35,14 @@ def main():
         raise SystemExit(f"[GeoJSON Error] Invalid GeoJSON format: {e}")
 
     try:
-        aoi_bbox, aoi_size = get_aoi_bbox_and_size(bbox)
+        utm_bbox, aoi_size = get_aoi_bbox_and_size(bbox)
     except Exception as e:
         raise SystemExit(f"[BBox Error] Could not compute bbox/size: {e}")
 
     # Build the request
     try:
         image = all_bands_request(
-            aoi_bbox, aoi_size, config, start_time, end_time)
+            utm_bbox, aoi_size, config, start_time, end_time)
     except DownloadFailedException as e:
         raise SystemExit(f"[Download Error]: Could not fetch image: {e}")
 
@@ -51,7 +51,7 @@ def main():
     full_tensor = add_bands(image)     # (H, W, 15)
 
     # Save full tensor with rasterio
-    save_tensor_as_tiff(full_tensor, aoi_bbox, "./sentinel_tensor_10m.tiff", scale_factor=2)
+    save_tensor_as_tiff(full_tensor, utm_bbox, "./sentinel_tensor_10m.tiff")
 
     print("Final tensor shape:", full_tensor.shape)
 
