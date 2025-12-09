@@ -1,4 +1,4 @@
-#include "tiff_reader.h"
+#include "tiff_image_vectorization.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -35,7 +35,7 @@ ImageTensor* load_tiff_as_tensor(const char* filename)
     int* scanline = malloc(TIFFScanlineSize(tif));
 
     for (int y = 0; y < h; y++) {     //Scan row by row and memorize the value of the image into the tensor
-        TIFFReadScanline(tif, scanline, y);
+        TIFFReadScanline(tif, scanline, y, 0);
 
         for (uint32_t x = 0; x < w; x++) {
             for (int k = 0; k < c; k++) {

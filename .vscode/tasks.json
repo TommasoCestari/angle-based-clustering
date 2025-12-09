@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Image vectorization build",
+			"command": "C:/msys64/mingw64/bin/gcc.exe",
+			"args": [
+				"-fdiagnostics-color=always",
+				"-g",
+                "${workspaceFolder}/Image vectorization/image_to_tensor.c",
+                "${workspaceFolder}/Image vectorization/tiff_image_vectorization.c",
+                "-I",
+                "C:/msys64/mingw64/include",
+                "-L",
+                "C:/msys64/mingw64/lib",
+                "-ltiff",
+                "-o",
+                "${workspaceFolder}/Image vectorization/image_to_tensor.exe"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/Image vectorization"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: C:/msys64/mingw64/bin/gcc.exe"
+		}
+	]
+}
