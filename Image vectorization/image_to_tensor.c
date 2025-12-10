@@ -3,7 +3,7 @@
 #include "tiff_image_vectorization.h"
 
 int main(int argc, char *argv[]) {
-    ImageTensor* img = load_tiff_as_tensor("C:\\Users\\andre\\Desktop\\HPC project\\Trento image\\sentinel_tensor_10m.tiff");
+    ImageTensor* img = load_tiff_as_tensor("../sentinel_tensor_10m.tiff");
 
     if (!img) {
         printf("Error loading TIFF\n");
