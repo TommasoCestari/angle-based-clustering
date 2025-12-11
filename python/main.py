@@ -1,6 +1,7 @@
 from sentinelhub import SHConfig, DownloadFailedException
 from dotenv import load_dotenv
-from img_fetch_utils import GeoJson_to_bbox, get_aoi_bbox_and_size, all_bands_request, add_bands, save_tensor_as_tiff
+from utils.img_fetch import all_bands_request, add_bands, save_tensor_as_tiff
+from utils.geospatial import GeoJson_to_bbox, get_aoi_bbox_and_size
 
 def main():
     # Load credentials
@@ -51,7 +52,7 @@ def main():
     full_tensor = add_bands(image)     # (H, W, 15)
 
     # Save full tensor with rasterio
-    save_tensor_as_tiff(full_tensor, utm_bbox, "./sentinel_tensor_10m.tiff")
+    save_tensor_as_tiff(full_tensor, utm_bbox, "../data/sentinel_tensor_10m.tiff")
 
     print("Final tensor shape:", full_tensor.shape)
 
