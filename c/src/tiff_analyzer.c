@@ -14,20 +14,20 @@ void analyze_tiff_structure(const char *filename) {
     }
 
     // --- 1. Get Image Dimensions (H and W) ---
-    uint32 image_width, image_length;
+    uint32_t image_width, image_length;
     // TIFFTAG_IMAGEWIDTH (W) and TIFFTAG_IMAGELENGTH (H) are mandatory TIFF tags
     TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &image_width);
     TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &image_length);
 
     // --- 2. Get Channel Count (C) ---
-    uint16 samples_per_pixel;
+    uint16_t samples_per_pixel;
     // TIFFTAG_SAMPLESPERPIXEL is the number of bands (C)
     if (!TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samples_per_pixel)) {
         samples_per_pixel = 1; // Default to 1 if tag is missing (e.g., grayscale)
     }
 
     // --- 3. Get Bits Per Sample (Data Type / Bit Depth) ---
-    uint16 bits_per_sample;
+    uint16_t bits_per_sample;
     if (!TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bits_per_sample)) {
         bits_per_sample = 8; // Default to 8-bit if tag is missing
     }
@@ -39,7 +39,7 @@ void analyze_tiff_structure(const char *filename) {
     //}
 
     // --- 5. Get Sample Format (Integer, Float, etc.) ---
-    uint16 sample_format = SAMPLEFORMAT_UINT; // Default to Unsigned Integer
+    uint16_t sample_format = SAMPLEFORMAT_UINT; // Default to Unsigned Integer
     TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sample_format);
 
     // --- Print Results ---
@@ -69,7 +69,7 @@ void analyze_tiff_structure(const char *filename) {
 }
 
 int main(int argc, char *argv[]) {
-    const char *default_path = "../../data/sentinel_tensor_10m.tiff";
+    const char *default_path = "data/sentinel_tensor_10m.tiff";
     const char *filename = NULL;
 
     if (argc == 2) {
