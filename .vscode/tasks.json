@@ -26,7 +26,34 @@
 			],
 			"group": {
 				"kind": "build",
-				"isDefault": true
+			},
+			"detail": "compiler: C:/msys64/mingw64/bin/gcc.exe"
+		}
+		{
+			"type": "shell",
+			"label": "Kd_tree build",
+			"command": "C:/msys64/mingw64/bin/gcc.exe",
+			"args": [
+				"-fdiagnostics-color=always",
+				"-g",
+				"kd_tree.c",
+                "-I",
+                "C:/msys64/mingw64/include",
+                "-L",
+                "C:/msys64/mingw64/lib",
+                "-lkdtree",
+				"-lm",
+                "-o",
+                "${workspaceFolder}/Image vectorization/kd_tree.exe"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/Image vectorization"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build"
 			},
 			"detail": "compiler: C:/msys64/mingw64/bin/gcc.exe"
 		}
