@@ -4,7 +4,6 @@
 #include <math.h>
 #include <kdtree.h> // <-- The header for the C library
 
-// Define the dimension of our points (3D: x, y, z)
 #define DIM 3
 
 void print_point(double *point) {
