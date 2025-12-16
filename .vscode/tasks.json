@@ -28,7 +28,7 @@
 				"kind": "build",
 			},
 			"detail": "compiler: C:/msys64/mingw64/bin/gcc.exe"
-		}
+		},
 		{
 			"type": "shell",
 			"label": "Kd_tree build",
