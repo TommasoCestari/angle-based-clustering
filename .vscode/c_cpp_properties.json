@@ -3,7 +3,10 @@
         {
             "name": "Windows",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/kdtree-0.5.7",
+                "${workspaceFolder}/c/include",
+                "C:/msys64/mingw64/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -20,15 +23,18 @@
             "name": "macOS",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/kdtree-0.5.7",
+                "${workspaceFolder}/c/include",
+                "/opt/homebrew/opt/libtiff/include",
                 "/opt/homebrew/include"
             ],
             "defines": [
                 "_DEBUG"
             ],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "macos-clang-arm64"
+            "intelliSenseMode": "macos-gcc-arm64"
         }
     ],
     "version": 4

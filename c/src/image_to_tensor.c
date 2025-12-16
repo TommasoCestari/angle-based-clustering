@@ -3,19 +3,13 @@
 #include "tiff_image_vectorization.h"
 
 int main(int argc, char *argv[]) {
-    ImageTensor* img = load_tiff_as_tensor("../sentinel_tensor_10m.tiff");
+    ImageTensor* img = load_tiff_as_tensor("data/sentinel_tensor_10m.tiff");
 
     if (!img) {
         printf("Error loading TIFF\n");
         return 1;
     }
-
-    printf("Width = %u\n", img->width);
-    printf("Height = %u\n", img->height);
-    printf("Channels = %u\n", img->channels);
-
-    
-    
+       
     FILE *file_pointer;
     file_pointer = fopen("text.txt", "w");
     if (file_pointer == NULL) {
