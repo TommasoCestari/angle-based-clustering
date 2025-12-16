@@ -36,6 +36,6 @@ all: image_to_tensor tiff_analyzer kd_tree
 
 # Clean compiled files
 clean:
-	$(RM) image_to_tensor$(EXE) tiff_analyzer$(EXE) clustering$(EXE) text.txt
+	$(RM) image_to_tensor$(EXE) tiff_analyzer$(EXE) kd_tree$(EXE) text.txt
 
 .PHONY: all clean

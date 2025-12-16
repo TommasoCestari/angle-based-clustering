@@ -9,12 +9,7 @@ int main(int argc, char *argv[]) {
         printf("Error loading TIFF\n");
         return 1;
     }
-
-    printf("Width = %u\n", img->width);
-    printf("Height = %u\n", img->height);
-    printf("Channels = %u\n", img->channels);
-    
-    
+       
     FILE *file_pointer;
     file_pointer = fopen("text.txt", "w");
     if (file_pointer == NULL) {
