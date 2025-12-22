@@ -1,7 +1,7 @@
 kdlib = ../libkdtree.a
 
 CC = gcc
-CFLAGS = -std=c89 -pedantic -Wall -g -I..
+CFLAGS = -std=c17 -pedantic -Wall -g -I..
 LDFLAGS = $(kdlib) -lm
 
 .PHONY: all

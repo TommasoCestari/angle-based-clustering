@@ -32,15 +32,15 @@ ImageTensor* load_tiff_as_tensor(const char* filename)
     TIFF* tif = TIFFOpen(filename, "r");
     if (!tif) return NULL;
 
-    int* scanline = malloc(TIFFScanlineSize(tif));
+    float* scanline = malloc(TIFFScanlineSize(tif));
 
     for (int y = 0; y < h; y++) {     //Scan row by row and memorize the value of the image into the tensor
         TIFFReadScanline(tif, scanline, y, 0);
 
-        for (uint32_t x = 0; x < w; x++) {
+        for (int x = 0; x < w; x++) {
             for (int k = 0; k < c; k++) {
                 img->data[(y * w + x) * c + k] =
-                    ((float*)scanline)[x * c + k];
+                    (scanline)[x * c + k];
             }
         }
     }

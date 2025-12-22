@@ -1,0 +1,6 @@
+KD-tree built with 52072 points (184x283 pixels, D=15)
+Neighbor 0: dist2 = 0.000000
+Neighbor 1: dist2 = 0.006460
+Neighbor 2: dist2 = 0.006578
+Neighbor 3: dist2 = 0.007050
+Neighbor 4: dist2 = 0.010656
