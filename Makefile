@@ -17,7 +17,7 @@ else
 endif
 
 # Object files
-OBJ = $(SRC_DIR)/image_to_tensor.o $(SRC_DIR)/tiff_image_vectorization.o $(SRC_DIR)/kd_tree_from_scratch.o 
+OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o
 
 # Compile object files
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c
@@ -26,12 +26,13 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.c
 $(KDTREE_DIR)/%.o: $(KDTREE_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Link everything into image_to_tensor
-image_to_tensor: $(OBJ)
+# Link everything into main (image_to_tensor)
+main: $(OBJ)
 	$(CC) $(OBJ) -o $@$(EXE) $(LDFLAGS)
 
 # Clean compiled files
+RM = rm -f
 clean:
-	$(RM) $(SRC_DIR)/*.o $(KDTREE_DIR)/*.o image_to_tensor$(EXE) tiff_analyzer$(EXE) kd_tree$(EXE) text.txt
+	$(RM) $(SRC_DIR)/*.o $(KDTREE_DIR)/*.o main$(EXE) tiff_analyzer$(EXE) kd_tree$(EXE) text.txt
 
 .PHONY: clean

@@ -4,6 +4,7 @@
 #include "kd_tree.h"
 #define D 15   // number of dimensions
 
+//current_axis is global (NOT thread-safe)
 static int current_axis;
 
 // Function to create a new node
@@ -115,8 +116,15 @@ static void kd_knn_search(kd_node *node,
 {
     if (!node) return;
 
-    float d = dist2(query, node->point);
-    knn_insert(best, count, k, node->point, d);
+    //float d = dist2(query, node->point);
+    //knn_insert(best, count, k, node->point, d);
+    // Do not include the starting point
+    if (node->point != query) {
+        float d = dist2(query, node->point);
+        knn_insert(best, count, k, node->point, d);
+    }
+
+
 
     int axis = node->axis;
     float diff = query[axis] - node->point[axis];
