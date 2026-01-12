@@ -17,7 +17,7 @@ else
 endif
 
 # Object files
-OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o
+OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o $(SRC_DIR)/sorting.o
 
 # Compile object files
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c

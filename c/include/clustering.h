@@ -7,7 +7,7 @@ const float PI_F = 3.14159265358979323846f;
 
 typedef struct {
     int* cluster_ids;      // DBSCAN assignment
-    double* border_degrees; // computed angles
+    float* border_degrees; // computed angles
     bool* is_border;       // border flags
     int num_pixels;
 } ClusteringResults;

@@ -4,41 +4,35 @@
 #include "tiff_image_vectorization.h"
 #include "kd_tree.h"
 #include "knn_operations.h"
-#define D 15   // number of dimensions
+#include "sorting.h"
+#define k 5
 
 
 int main(int argc, char *argv[]) {
     // Tensorize image
     ImageTensor* img = load_tiff_as_tensor("data/sentinel_tensor_10m.tiff");
-
+    int width = img->width; int height = img->height;
     if (!img) {
         printf("Error loading TIFF\n");
         return 1;
     }
 
-    // KD tree creation and assigning
+    // Allocate memory for pixel pointers
     size_t n_points = (size_t)img->width * img->height;
-    point_t *points = malloc(n_points * sizeof(point_t)); // Allocate memory for pointers
+    point *points = malloc(n_points * sizeof(point)); 
     if (!points) {
-        perror("malloc");
+        printf("Error allocating pixel pointers memory");
         return 1;
     }
 
+    // Assign the pointers the value of a pixel and also store it's coordinates
     for (size_t i = 0; i < n_points; i++) {
-        points[i] = &img->data[i * img->channels];
+        points[i].v = img->data + (i * img->channels);
+        points[i].x = i % img->width;   // column
+        points[i].y = i / img->width;   // row
     }
-
+    // Create the kd-tree
     kd_node *tree = kd_build(points, n_points, 0);
-
-    // Nearest neighbour algorithm test
-    int y = 10, x = 20;
-    point_t query =
-        &img->data[(y * img->width + x) * img->channels];
-
-    int k = 5;
-    knn_item neighbors[5];
-
-    kd_knn(tree, query, k, neighbors);
 
     // Print results in a txt file
     FILE *file_pointer;
@@ -47,27 +41,31 @@ int main(int argc, char *argv[]) {
         printf("Error opening the file!\n");
         return 1; 
     }
-    fprintf(file_pointer,"KD-tree built with %zu points (%dx%d pixels, D=%d)\n",
-            n_points, img->width, img->height, D);
-    for (int i = 0; i < k; i++) {
-        fprintf(file_pointer, "Neighbor %d: [", i);
-        for (int d = 0; d < D; d++) {
-            fprintf(file_pointer,"%f", neighbors[i].point[d]);
-            if (d < D - 1) fprintf(file_pointer,", ");
-        }
-        fprintf(file_pointer, "] dist2 = %f\n", neighbors[i].dist2);
+
+    // Add the max angle for every point
+    updated_max_angles(tree, points, n_points, k, D);
+
+    // Find the number of the 20% barrier
+    float points_copy[n_points];
+    for (int i = 0; i < n_points; i++){
+        if(!(i % width)){fprintf(file_pointer, "\n");}
+        double angle_max_degrees = (points[i].max_angle)*180/3.1415; // (*points[i].v)*180/3.1415
+        fprintf(file_pointer, "[%.2f°]", angle_max_degrees); 
+        points_copy[i] = points[i].max_angle;
     }
 
-    fprintf(file_pointer, "\n ///////////////////// \n");
-    float angles[k];
-    vector_angle_result(query, neighbors , k, D, &angles[0]);
-    double degrees;
-    fprintf(file_pointer,"[");
-    for (int i = 0; i < k; i++) {
-        degrees = angles[i]*180/3.14159;
-            fprintf(file_pointer," %f (%.1f°), ", angles[i], degrees);
-            if (i == (k-1)) {fprintf(file_pointer,"]");}
+    float p20 = _percentile(points_copy, width*height, 20.0f);
+
+    fprintf(file_pointer, "\n/////////////////////\n20\% value of the barrier: %f°", (p20)*180/3.1415); //(p20)*180/3.1415
+    fprintf(file_pointer, "\n");
+    for (int i = 0; i < (n_points); i++){
+        if(points[i].max_angle < p20) {
+            if(!(i % width)){fprintf(file_pointer, "\n");}
+            double angle_max_degrees = (points[i].max_angle)*180/3.1415;
+            fprintf(file_pointer, "[%.2f°]", angle_max_degrees); 
         }
+    }
+    // Print results in a txt file
 
     fclose(file_pointer);
 

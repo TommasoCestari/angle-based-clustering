@@ -43,7 +43,7 @@ float vector_compute_angle(const float* vector_1, const float* vector_2, int dim
     return acosf(cosine_sim);
 }
 
-void vector_mean_of_neighbors(const knn_item *neighbors , int k, float* vector_mean, int dims){
+void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float* vector_mean){
     // Mean vector initialization
     for (int d = 0; d < dims; d++) {
         vector_mean[d] = 0.0f;
@@ -52,27 +52,33 @@ void vector_mean_of_neighbors(const knn_item *neighbors , int k, float* vector_m
     // Do the mean for every dimention
     for (int d = 0; d < dims; d++){
         for (int i = 0; i < k; i++) {
-            vector_mean[d] += neighbors[i].point[d];
+            vector_mean[d] += neighbors[i].point_.v[d];
         }
         vector_mean[d] = vector_mean[d]/k;
     }
 }
 
-void vector_angle_result(const float* query_point, const knn_item *neighbors , int k, int dims, float *angles){
-    // Creatimg the mean of the neighbors
+void vector_angle_result(const point* query_point, const kd_node* tree, int k, int dims, float *angles){
+    
+    // Searching the neighbors of the query_point
+    knn_item neighbors[5];
+    kd_knn(tree, *query_point, k, neighbors);
+
+    // Creating the mean of the neighbors of the query_point
     float vector_mean[dims]; 
-    vector_mean_of_neighbors(neighbors, k, &vector_mean[0], dims);
-    // Vectorization of the mean of the neighbors
+    vector_mean_of_neighbors(neighbors, k, dims, vector_mean);
+
+    // Vectorization of the mean of the neighbors (subtracting the query point to the mean of the neighbors)
     float mean_vector[dims];
     for (int d = 0; d < dims; d++) {
-        mean_vector[d] = vector_mean[d] - query_point[d];
+        mean_vector[d] = vector_mean[d] - query_point->v[d];
     }
 
-    float neighbors_vector[k][dims];
     // Vectorization of the neighbors
+    float neighbors_vector[k][dims];
     for (int d = 0; d < dims; d++){
         for (int i = 0; i < k; i++) {
-            neighbors_vector[i][d] = neighbors[i].point[d] - query_point[d];
+            neighbors_vector[i][d] = neighbors[i].point_.v[d] - query_point->v[d];
         }
     }
 
@@ -82,6 +88,17 @@ void vector_angle_result(const float* query_point, const knn_item *neighbors , i
 
 }
 
+void updated_max_angles(const kd_node* tree, point* points, int n_points, int k, int dims){
+
+    float angles[k];
+    for (int i = 0; i < n_points; i++){
+        vector_angle_result(&points[i], tree, k, dims, angles);
+        float max = angles[0];
+        for(int i=1; i<k; i++) {if(angles[i] > max) max = angles[i];}
+        points[i].max_angle = max;
+    }
+
+}
 
 
 
