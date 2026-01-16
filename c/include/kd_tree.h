@@ -1,14 +1,18 @@
 #ifndef KD_TREE_H
 #define KD_TREE_H
-#define D 15
+/* Feature dimension `D` is set at runtime (image channels). */
+extern int D;
 typedef float* point_t;
 
-typedef struct {
+typedef struct point{
     point_t v;   // feature vector (pointer to array of floats)
     int x;
     int y;
     int axis;     // used ONLY during build
     float max_angle;
+    float mean_knn_dist;
+    int labelll;
+    float *direction;
 } point;
 
 
@@ -25,6 +29,7 @@ typedef struct {
 } knn_item;
 
 void kd_knn(const kd_node *root, point query, int k, knn_item *out);
+float dist2(const point a, const point b);
 //int compare_points(const void *a, const void *b);
 
 /* API */

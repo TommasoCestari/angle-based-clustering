@@ -6,6 +6,21 @@
 
 const float PI_F = 3.14159265358979323846f;
 
+int n_of_border_points(const point* points, int n_points, float percentile){
+    int n_border_points = 0;
+
+    for (int i = 0; i < (n_points); i++){
+        if(points[i].max_angle < percentile) {
+            n_border_points++;
+        }
+    }
+    if (n_border_points == 0) {
+        printf("ERROR: no border points found\n");
+        return -1;
+    } else {
+        return n_border_points;
+    }
+}
 void vector_subtraction(const float* vector_1, const float* vector_2, float* result_vector, int dims) {
     for(int i = 0; i < dims; i++) {
         result_vector[i] = vector_1[i] - vector_2[i];
@@ -58,7 +73,7 @@ void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float
     }
 }
 
-void vector_angle_result(const point* query_point, const kd_node* tree, int k, int dims, float *angles){
+void vector_angle_result(point* query_point, const kd_node* tree, int k, int dims, float *angles){
     
     // Searching the neighbors of the query_point
     knn_item neighbors[5];
@@ -73,6 +88,14 @@ void vector_angle_result(const point* query_point, const kd_node* tree, int k, i
     for (int d = 0; d < dims; d++) {
         mean_vector[d] = vector_mean[d] - query_point->v[d];
     }
+    
+    // Add the mean distance to the points for the esp in DBSCAN
+    float mean_distance = 0;
+    for (int i = 0; i < k; i++){
+        mean_distance += dist2(*query_point, neighbors[i].point_);
+    }
+    mean_distance = mean_distance/k;
+    query_point->mean_knn_dist = mean_distance;
 
     // Vectorization of the neighbors
     float neighbors_vector[k][dims];
@@ -92,6 +115,10 @@ void updated_max_angles(const kd_node* tree, point* points, int n_points, int k,
 
     float angles[k];
     for (int i = 0; i < n_points; i++){
+        if (i % 5000 == 0) {
+            printf("updated_max_angles: i=%d\n", i);
+            fflush(stdout);
+        }
         vector_angle_result(&points[i], tree, k, dims, angles);
         float max = angles[0];
         for(int i=1; i<k; i++) {if(angles[i] > max) max = angles[i];}

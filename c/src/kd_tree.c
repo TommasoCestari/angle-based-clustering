@@ -2,9 +2,7 @@
 #include <stdio.h>
 #include <stddef.h>   // for size_t
 #include "kd_tree.h"
-
-//current_axis is global (NOT thread-safe)
-static int current_axis;
+#define D 15
 
 // Function to create a new node
 kd_node* kd_create_node(point point_, int axis) {
@@ -46,7 +44,8 @@ kd_node* kd_build(point *points_, size_t n, int depth)
 
     size_t median = n / 2;
 
-    kd_node *node = kd_create_node(*points_, axis);
+    /* Create node from the median element (use median, not first element) */
+    kd_node *node = kd_create_node(points_[median], axis);
 
     node->left  = kd_build(points_, median, depth + 1);
     node->right = kd_build(points_ + median + 1, n - median - 1, depth + 1);
@@ -64,7 +63,7 @@ void kd_free(kd_node *node) {
     free(node);
 }
 
-static float dist2(point a, point b)
+float dist2(const point a, const point b)
 {
     float d = 0.0f;
     for (int i = 0; i < D; i++) {
@@ -82,6 +81,7 @@ static void knn_insert(knn_item *list, int *count, int k,
     if (i < k) {
         list[i].point_ = point_;
         list[i].dist2 = dist2;
+
         (*count)++;
     } else if (dist2 >= list[k-1].dist2) {
         return; // worse than worst
@@ -101,7 +101,7 @@ static void knn_insert(knn_item *list, int *count, int k,
 }
 
 static void kd_knn_search(const kd_node *node,
-                          const point query,
+                          point query,
                           knn_item *best,
                           int *count,
                           int k)
@@ -118,11 +118,12 @@ static void kd_knn_search(const kd_node *node,
 
 
 
-    //int axis = node->axis;
-    float diff = query.axis - node->point.axis;
+    /* Use the splitting axis coordinate difference between query and node */
+    int axis = node->point.axis;
+    float diff = query.v[axis] - node->point.v[axis];
 
-    kd_node *near = diff < 0 ? node->left  : node->right;
-    kd_node *far  = diff < 0 ? node->right : node->left;
+    const kd_node *near = diff < 0 ? node->left  : node->right;
+    const kd_node *far  = diff < 0 ? node->right : node->left;
 
     kd_knn_search(near, query, best, count, k);
 
