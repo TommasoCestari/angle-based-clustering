@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+//Everything was checked and it works
+
 int read_tiff_info(const char* filename, int* width, int* height, int* channels) {
     TIFF* tif = TIFFOpen(filename, "r");
     if (!tif) return 0;
@@ -31,6 +33,25 @@ ImageTensor* load_tiff_as_tensor(const char* filename)
 
     TIFF* tif = TIFFOpen(filename, "r");
     if (!tif) return NULL;
+
+    // Check if data is float and if 
+    uint16 bps, sampleformat, planar;
+
+    TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bps);
+    TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleformat);
+    TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &planar);
+
+    if (bps != 32 || sampleformat != SAMPLEFORMAT_IEEEFP) {
+        fprintf(stderr, "TIFF is not 32-bit float\n");
+        TIFFClose(tif);
+        return NULL;
+    }
+
+    if (planar != PLANARCONFIG_CONTIG) {    // If the way the data is stored in the tiff is not planar (is separate instead) code will not work
+        fprintf(stderr, "Unsupported planar configuration\n");
+        TIFFClose(tif);
+        return NULL;
+    }
 
     float* scanline = malloc(TIFFScanlineSize(tif));
 

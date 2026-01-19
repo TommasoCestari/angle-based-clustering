@@ -4,12 +4,14 @@
 #include "knn_operations.h"
 #include "kd_tree.h"
 
+extern int D;
+
 const float PI_F = 3.14159265358979323846f;
 
-int n_of_border_points(const point* points, int n_points, float percentile){
-    int n_border_points = 0;
+size_t n_of_border_points(const point* points, size_t n_points, float percentile){
+    size_t n_border_points = 0;
 
-    for (int i = 0; i < (n_points); i++){
+    for (size_t i = 0; i < (n_points); i++){
         if(points[i].max_angle < percentile) {
             n_border_points++;
         }
@@ -111,10 +113,10 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
 
 }
 
-void updated_max_angles(const kd_node* tree, point* points, int n_points, int k, int dims){
+void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims){
 
     float angles[k];
-    for (int i = 0; i < n_points; i++){
+    for (size_t i = 0; i < n_points; i++){
         if (i % 5000 == 0) {
             printf("updated_max_angles: i=%d\n", i);
             fflush(stdout);

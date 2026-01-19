@@ -8,7 +8,8 @@
 
 #define UNVISITED -1
 #define NOISE     -2
-#define D 15
+
+extern int D;
 
 void copy_points_and_border (point* points, point* border_points, int n_points, float p20, int a){
     if(a == 1){
@@ -28,10 +29,10 @@ void copy_points_and_border (point* points, point* border_points, int n_points, 
     } else {printf("Parametro non corretto, copia non avvenuta");}
 }
 
-float compute_eps(const point* border_points, int n_border)
+float compute_eps(const point* border_points, size_t n_border)
 {
     float sum = 0.0f;
-    for (int i = 0; i < n_border; i++) {
+    for (size_t i = 0; i < n_border; i++) {
         sum += border_points[i].mean_knn_dist;
     }
     return 0.25f * (sum / n_border);
@@ -177,6 +178,18 @@ void save_final_image(const char* filename, int* finalImage, size_t n_points) {
     }
     fclose(f);
 }
+
+void save_raw_15band( const char* filename, float* data, size_t total_elements) {
+    FILE* f = fopen(filename, "wb");
+    if (!f) {
+        perror("Cannot open file");
+        return;
+    }
+
+    fwrite(data, sizeof(float), total_elements, f);
+    fclose(f);
+}
+
 
 
 

@@ -3,6 +3,8 @@
 #include "sorting.h"
 #include "kd_tree.h"
 
+extern int D;
+
 static inline void swap(float *a, float *b) {
     float t = *a; *a = *b; *b = t;
 }
@@ -31,13 +33,13 @@ static void quickselect(float *a, int left, int right, int k) {
     }
 }
 
-float _percentile(const point* points, int number_of_points, float x_percent) {
+float _percentile(const point* points, size_t number_of_points, float x_percent) {
     if (number_of_points <= 0) return 0.0f;
 
     float *points_copy = malloc(number_of_points * sizeof(float));
     if (!points_copy) return 0.0f;
 
-    for (int i = 0; i < number_of_points; i++){
+    for (size_t i = 0; i < number_of_points; i++){
         points_copy[i] = points[i].max_angle;
     }
 
