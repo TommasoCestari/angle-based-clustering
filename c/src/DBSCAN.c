@@ -8,8 +8,7 @@
 
 #define UNVISITED -1
 #define NOISE     -2
-
-extern int D;
+#define D 15
 
 void copy_points_and_border (point* points, point* border_points, int n_points, float p20, int a){
     if(a == 1){
@@ -56,7 +55,7 @@ int range_query(point *points, int n_points, int idx, float eps, int *neighbors)
     for (int i = 0; i < n_points; i++) {
         if (i == idx) continue;
 
-        float d = modified_distance(&points[idx], &points[i], 0.2, D); //tra 0.2 e 5
+        float d = modified_distance(&points[idx], &points[i], 0.1, D); //tra 0.2 e 1
         if (d <= eps) {
             neighbors[count++] = i;
         }
@@ -117,8 +116,7 @@ static void expand_cluster(point *points, int n_points, int idx,
 
 void dbscan(point *points, int n_points, float eps, int minPts)
 {
-    printf("dbscan start: n_points=%d, eps=%f, minPts=%d\n",
-           n_points, eps, minPts);
+    printf("Dbscan start: n_points=%d, eps=%f, minPts=%d\n", n_points, eps, minPts);
 
     /* initialize labels */
     for (int i = 0; i < n_points; i++) {
@@ -126,12 +124,15 @@ void dbscan(point *points, int n_points, float eps, int minPts)
     }
 
     int cluster_id = 0;
-
+    float l = 0; //Just a counter for the print
     for (int i = 0; i < n_points; i++) {
         
-        if (i % 1000 == 0) {
-            printf("dbscan progress: i=%d\n", i);
-            fflush(stdout);
+        
+        if (i % (int)(n_points/100) == 0) {
+            l += (float)n_points/100;
+            float m = l/n_points*100; //Just a counter for the print
+            printf("\rDbscan progress: %.1f\% (%d/%d)", m, i, n_points);
+            fflush(stdout); // Force the output to show immediately
         }
 
         if (points[i].labelll != UNVISITED)
@@ -146,14 +147,14 @@ void dbscan(point *points, int n_points, float eps, int minPts)
             continue;
         }
 
-        printf("dbscan: seed point %d has %d neighbors -> expanding cluster %d\n",
-               i, n_neighbors, cluster_id);
+        //printf("dbscan: seed point %d has %d neighbors -> expanding cluster %d\n",
+        //       i, n_neighbors, cluster_id);
         fflush(stdout);
 
         expand_cluster(points, n_points,
                        i, cluster_id, eps, minPts);
 
-        printf("dbscan: finished cluster %d\n", cluster_id);
+        printf("\ndbscan: finished cluster %d\n", cluster_id);
         fflush(stdout);
 
         cluster_id++;
@@ -218,15 +219,28 @@ void compute_point_direction(point* query_point, const kd_node* tree, int k, int
 }
 
 
-void compute_all_directions(point* points,
-                            int n_points,
-                            const kd_node* tree,
-                            int k,
-                            int dims)
+void compute_all_directions(point* points, int n_points,
+                            const kd_node* tree, int k, int dims)
 {
+    int j = n_points/100; //Just a counter for the print
+    float l = 0; //Just a counter for the print
+
     for (int i = 0; i < n_points; i++) {
+
+        //Printing of progress
+        if ((i % j) == 0) {
+            l += j;
+            float m = l/n_points*100;
+            if(m>100) {m = 100;}
+            printf("\rCompute_all_directions: %.1f\% (%d/%d)", m, i, n_points);
+            fflush(stdout); // Force the output to show immediately
+        }
+        
+        //Actual computing of the direction
         compute_point_direction(&points[i], tree, k, dims);
     }
+
+    printf("\r(6/11) Compute_all_directions: 100\% (%d/%d)\n", n_points, n_points);
 }
 
 

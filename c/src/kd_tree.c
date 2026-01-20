@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stddef.h>   // for size_t
 #include "kd_tree.h"
-extern int D;
+#define D 15
 
 // Function to create a new node
 kd_node* kd_create_node(point point_, int axis) {

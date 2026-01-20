@@ -78,7 +78,7 @@ void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float
 void vector_angle_result(point* query_point, const kd_node* tree, int k, int dims, float *angles){
     
     // Searching the neighbors of the query_point
-    knn_item neighbors[5];
+    knn_item neighbors[k];
     kd_knn(tree, *query_point, k, neighbors);
 
     // Creating the mean of the neighbors of the query_point
@@ -116,16 +116,27 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
 void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims){
 
     float angles[k];
+    int j = n_points/100; //Just a counter for the print
+    float l = 0; //Just a counter for the print
+
     for (size_t i = 0; i < n_points; i++){
-        if (i % 5000 == 0) {
-            printf("updated_max_angles: i=%d\n", i);
-            fflush(stdout);
+
+        //Print the progress
+        if ((i % j) == 0) {
+            l += j;
+            float m = l/n_points*100;
+            if(m>100) {m = 100;}
+            printf("\rUpdated_max_angles: %.1f\% (%d/%d)", m, i, n_points);
+            fflush(stdout); // Force the output to show immediately
         }
+        
         vector_angle_result(&points[i], tree, k, dims, angles);
         float max = angles[0];
         for(int i=1; i<k; i++) {if(angles[i] > max) max = angles[i];}
         points[i].max_angle = max;
     }
+    printf("\r(3/11) Updated_max_angles: 100\% (%d/%d)\n", n_points, n_points);
+    fflush(stdout); // Force the output to show immediately
 
 }
 

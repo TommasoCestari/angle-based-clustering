@@ -7,8 +7,9 @@
 #include "knn_operations.h"
 #include "sorting.h"
 #include "DBSCAN.h"
-#define k 5
-int D;
+#define k 35
+#define D 15
+
 
 int main(int argc, char *argv[]) {
     // Tensorize image
@@ -17,13 +18,13 @@ int main(int argc, char *argv[]) {
         printf("Error loading TIFF\n");
         return 1;
     }
-    printf("main: loaded image w=%d h=%d c=%d\n", img->width, img->height, img->channels);
+    printf("(1/11) Loaded image w=%d h=%d c=%d", img->width, img->height, img->channels);
     fflush(stdout);
-    int width = img->width; int height = img->height; D = img->channels;
+    int width = img->width; int height = img->height;
 
     // Allocate memory for pixel pointers
     size_t n_points = (size_t)img->width * img->height; //size_t is like and unsigned long long int (64 bit) used to store memory values
-    printf("main: n_points=%zu\n", n_points); //%zu is like %d but for size_t elements
+    printf(" (n_points=%zu)\n", n_points); //%zu is like %d but for size_t elements
     fflush(stdout);
 
     point *points = malloc(n_points * sizeof(point)); 
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]) {
         points[i].x = i % img->width;   // column
         points[i].y = i / img->width;   // row
     }
-    
+
     /* allocate one contiguous block for all direction vectors for performance */
     float *all_directions = malloc(n_points * D * sizeof(float));
     if (!all_directions) {
@@ -48,76 +49,86 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < n_points; i++) {
         points[i].direction = all_directions + (i * D);
     }
-    printf("main: allocated direction buffers\n");
-    fflush(stdout);
 
     // Create the kd-tree
-    kd_node *tree = kd_build(points, n_points, 0);
-    printf("main: kd_build completed\n");
+    kd_node *tree = kd_build(points, n_points, 0); // Checked and it actually works
+    printf("(2/11) Kd-tree building completed\n");
     fflush(stdout);
     
     // Add the max angle for every point
-    updated_max_angles(tree, points, n_points, k, D);
-
+    updated_max_angles(tree, points, n_points, k, D); // (3/10)
+    
     //Find the 20% barrier for the 20% lower angles and the numbe of border points
-    float p20 = _percentile(points, n_points, 20.0f);
+    float p20 = _percentile(points, n_points, 30.0f);
+    printf("(4/11) Border points percentile found\n");
+    fflush(stdout);
+    
     size_t n_border_points = n_of_border_points(points, n_points, p20);
     point *border_points = malloc(n_border_points * sizeof(point));
-    
+
     //Copy points into border points (only actual border points)
     copy_points_and_border(points, border_points, n_points, p20, -1);
 
     // Calculate eps value for dbscan
     float eps = compute_eps(border_points, n_border_points);
+    printf("(5/11) Copied border points and found eps\n");
 
     //Compute angles for dbscan
     compute_all_directions(points, n_points, tree, k, D);
-    printf("main: compute_all_directions done\n");
-    fflush(stdout);
-    
+
     //Assign border points a label
-    dbscan(border_points, n_border_points, eps, 6);
+    dbscan(border_points, n_border_points, 45*eps, 6);
+    printf("(7/11) Dbscan completed\n");
+    fflush(stdout);
 
     //Copy the label of border points to the actual points
-    //copy_points_and_border(points, border_points, n_points, p20, 1);
+    copy_points_and_border(points, border_points, n_points, p20, 1);
+    printf("(8/11) Copied all labels into points[]\n");
+    fflush(stdout);
 
     // Assign non border points a label = -4
-    //for (int i = 0; i < n_points; i++) {
-    //    if (points[i].max_angle >= p20) {
-    //        points[i].labelll = -4;
-    //    }
-    //}
+    for (int i = 0; i < n_points; i++) {
+        if (points[i].max_angle >= p20) {
+            points[i].labelll = -4;
+        }
+    }
 
     //Assigning of non border points
     //Create a kd-tree on the border points
-    //kd_node *border_tree = kd_build(border_points, n_border_points, 0);
+    kd_node *border_tree = kd_build(border_points, n_border_points, 0);
+    printf("(9/11) Built kd-tree for border points\n");
+    fflush(stdout);
 
-    //for (int i = 0; i < n_points; i++) {
-//
-//        if (points[i].labelll != -4) {continue;}   // skip border points
-//
-//        knn_item nearest[1];
-//        kd_knn(border_tree, points[i], 1, nearest); //Find the point nearest to the point in the kd_tree
-//
-//        point *b = &nearest[0].point_;
-//
-//        points[i].labelll = b->labelll;
-//    }
+    for (int i = (n_points-1); i > -1; i--) {
+
+        if (points[i].labelll != -4) {continue;}   // skip border points
+
+        knn_item nearest[1];
+        kd_knn(border_tree, points[i], 1, nearest); //Find the point nearest to the point in the kd_tree
+
+        point *b = &nearest[0].point_;
+
+        points[i].labelll = b->labelll;
+    }
+    printf("(10/11) Labeled all non border points\n");
+    fflush(stdout);
 
     //Final image creation
-    //int* finalImage = malloc(n_points * sizeof(int));
-    //for (int i = 0; i < n_points; i++) {
-    //    finalImage[i] = points[i].labelll;
-    //}
-    
+    int* finalImage = malloc(n_points * sizeof(int));
+    for (int i = 0; i < n_points; i++) {
+        finalImage[i] = points[i].labelll;
+    }
+
     //Final image save
-    //save_final_image("data/final_image.bin", finalImage, n_points);
+    save_final_image("data/final_image.bin", finalImage, n_points);
+    printf("(11/11) Exported the image in binary\n");
+    fflush(stdout);
 
     // free memory
-    //kd_free(tree);
-    //free(all_directions);
+    kd_free(tree);
+    free(all_directions);
     free(points);
     free(img->data);
     free(img);
-    //free(finalImage);
+    free(finalImage);
 }
