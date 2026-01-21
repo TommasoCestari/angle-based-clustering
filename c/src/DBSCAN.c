@@ -127,10 +127,11 @@ void dbscan(point *points, int n_points, float eps, int minPts)
     float l = 0; //Just a counter for the print
     for (int i = 0; i < n_points; i++) {
         
-        
+        //Structure for printing the progress
         if (i % (int)(n_points/100) == 0) {
             l += (float)n_points/100;
-            float m = l/n_points*100; //Just a counter for the print
+            float m = l/n_points*100; 
+            if(m>100) {m = 100;}
             printf("\rDbscan progress: %.1f\% (%d/%d)", m, i, n_points);
             fflush(stdout); // Force the output to show immediately
         }
