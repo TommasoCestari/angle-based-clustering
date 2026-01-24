@@ -108,7 +108,7 @@ def add_bands(image_data):
 
     eps = 1e-10
     NDVI = (B08 - B04) / (B08 + B04 + eps)
-    NDWI = (B03 - B11) / (B03 + B11 + eps)  # McFeeters version
+    NDWI = (B03 - B08) / (B03 + B08 + eps)  # McFeeters version
     NDSI = (B03 - B11) / (B03 + B11 + eps)
 
     image_with_indices = np.dstack([image_data, NDVI, NDWI, NDSI])

@@ -37,21 +37,32 @@ float _percentile(const point* points, size_t number_of_points, float x_percent)
     if (number_of_points <= 0) return 0.0f;
 
     float *points_copy = malloc(number_of_points * sizeof(float));
-    if (!points_copy) return 0.0f;
+    if (!points_copy) {
+        fprintf(stderr, "ERROR: Failed to allocate memory for percentile calculation\n");
+        exit(EXIT_FAILURE);  // Or handle differently
+    }
 
     for (size_t i = 0; i < number_of_points; i++){
         points_copy[i] = points[i].max_angle;
     }
 
     if (x_percent <= 0.0f) {
-        float res = points_copy[0];
+        float min_val = points_copy[0];
+        for (size_t i = 1; i < number_of_points; i++) {
+            if (points_copy[i] < min_val) min_val = points_copy[i];
+        }
         free(points_copy);
-        return res;
+        return min_val;
     }
+
     if (x_percent >= 100.0f) {
-        float res = points_copy[number_of_points - 1];
+        // Find maximum
+        float max_val = points_copy[0];
+        for (size_t i = 1; i < number_of_points; i++) {
+            if (points_copy[i] > max_val) max_val = points_copy[i];
+        }
         free(points_copy);
-        return res;
+        return max_val;
     }
 
     int k = (int)(x_percent * (number_of_points - 1) / 100.0f);

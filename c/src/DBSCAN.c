@@ -69,6 +69,7 @@ static void expand_cluster(point *points, int n_points, int idx,
 {
     int *neighbors = malloc(n_points * sizeof(int));
     int *queue     = malloc(n_points * sizeof(int));
+    int queue_capacity = n_points;
 
     int n_neighbors = range_query(points, n_points, idx, eps, neighbors);
 
@@ -78,36 +79,53 @@ static void expand_cluster(point *points, int n_points, int idx,
     int q_end   = 0;
 
     for (int i = 0; i < n_neighbors; i++) {
-        if (q_end < n_points) {
-            queue[q_end++] = neighbors[i];
+        if (q_end >= n_points) {
+            fprintf(stderr, "WARNING: Queue overflow in expand_cluster! Cluster may be incomplete.\n");
+            break;
         }
+        queue[q_end++] = neighbors[i];
     }
 
     while (q_start < q_end) {
-        int q = queue[q_start++];
-        if (points[q].labelll == -3) {points[q].labelll = UNVISITED;}
-
-        if (points[q].labelll == NOISE)
-            points[q].labelll = cluster_id;
-
-        if (points[q].labelll != UNVISITED)
-            continue;
-
+    int q = queue[q_start++];
+    
+    // Convert noise points to cluster members
+    if (points[q].labelll == NOISE) {
         points[q].labelll = cluster_id;
-
-        int n_q_neighbors =
-            range_query(points, n_points, q, eps, neighbors);
-
-        if (n_q_neighbors >= minPts) {
-            for (int i = 0; i < n_q_neighbors; i++) {
-                int n = neighbors[i];
-                if (points[n].labelll == UNVISITED && q_end < n_points) {
-                    points[n].labelll = -3;
-                    queue[q_end++] = n;
+    }
+    
+    // Skip already-processed points (shouldn't happen with -3 marker)
+    if (points[q].labelll != UNVISITED && points[q].labelll != -3) {
+        continue;
+    }
+    
+    // Assign cluster label
+    points[q].labelll = cluster_id;
+    
+    // Find neighbors
+    int n_q_neighbors = range_query(points, n_points, q, eps, neighbors);
+    
+    if (n_q_neighbors >= minPts) {
+        for (int i = 0; i < n_q_neighbors; i++) {
+            int n = neighbors[i];
+            // Only queue unvisited points
+            if (points[n].labelll == UNVISITED) {
+                // ✅ Reallocate if needed
+                if (q_end >= queue_capacity) {
+                    queue_capacity *= 2;
+                    queue = realloc(queue, queue_capacity * sizeof(int));
+                    if (!queue) {
+                        fprintf(stderr, "ERROR: Failed to reallocate queue\n");
+                        free(neighbors);
+                        return;
+                    }
                 }
+                points[n].labelll = -3;
+                queue[q_end++] = n;
             }
         }
     }
+}
 
     free(neighbors);
     free(queue);
@@ -124,16 +142,15 @@ void dbscan(point *points, int n_points, float eps, int minPts)
     }
 
     int cluster_id = 0;
-    float l = 0; //Just a counter for the print
+    size_t progress_interval = (n_points >= 100) ? n_points/100 : 1;
+
     for (int i = 0; i < n_points; i++) {
         
         //Structure for printing the progress
-        if (i % (int)(n_points/100) == 0) {
-            l += (float)n_points/100;
-            float m = l/n_points*100; 
-            if(m>100) {m = 100;}
-            printf("\rDbscan progress: %.1f\% (%d/%d)", m, i, n_points);
-            fflush(stdout); // Force the output to show immediately
+        if (i % progress_interval == 0 || i == n_points - 1) {
+            float percent = (float)(i + 1) / n_points * 100.0f;
+            printf("\rDbscan progress: %.1f%% (%d/%d)", percent, i + 1, n_points);
+            fflush(stdout);
         }
 
         if (points[i].labelll != UNVISITED)
@@ -147,10 +164,6 @@ void dbscan(point *points, int n_points, float eps, int minPts)
             free(neighbors);
             continue;
         }
-
-        //printf("dbscan: seed point %d has %d neighbors -> expanding cluster %d\n",
-        //       i, n_neighbors, cluster_id);
-        fflush(stdout);
 
         expand_cluster(points, n_points,
                        i, cluster_id, eps, minPts);
@@ -223,17 +236,14 @@ void compute_point_direction(point* query_point, const kd_node* tree, int k, int
 void compute_all_directions(point* points, int n_points,
                             const kd_node* tree, int k, int dims)
 {
-    int j = n_points/100; //Just a counter for the print
-    float l = 0; //Just a counter for the print
+    size_t progress_interval = (n_points >= 100) ? n_points/100 : 1;
 
     for (int i = 0; i < n_points; i++) {
 
         //Printing of progress
-        if ((i % j) == 0) {
-            l += j;
-            float m = l/n_points*100;
-            if(m>100) {m = 100;}
-            printf("\rCompute_all_directions: %.1f\% (%d/%d)", m, i, n_points);
+        if ((i % progress_interval) == 0 || i == n_points - 1) {
+            float percent = (float)(i + 1) / n_points * 100.0f;
+            printf("\rCompute_all_directions: %.1f%% (%d/%d)", percent, i, n_points);
             fflush(stdout); // Force the output to show immediately
         }
         
@@ -241,7 +251,7 @@ void compute_all_directions(point* points, int n_points,
         compute_point_direction(&points[i], tree, k, dims);
     }
 
-    printf("\r(6/11) Compute_all_directions: 100\% (%d/%d)\n", n_points, n_points);
+    printf("\r(6/11) Compute_all_directions: 100%% (%d/%d)\n", n_points, n_points);
 }
 
 

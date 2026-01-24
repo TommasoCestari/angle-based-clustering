@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Assign the pointers the value of a pixel and also store it's coordinates
+    // Assign the pointers the value of a pixel and also store its coordinates
     for (size_t i = 0; i < n_points; i++) {
         points[i].v = img->data + (i * img->channels); //Checked that values are actually in there
         points[i].x = i % img->width;   // column
@@ -41,13 +41,13 @@ int main(int argc, char *argv[]) {
     }
 
     /* allocate one contiguous block for all direction vectors for performance */
-    float *all_directions = malloc(n_points * D * sizeof(float));
+    float *all_directions = malloc(n_points * D * sizeof(float)); //same size as img -> data, but instead of raw pixel values has normalized angular vectors 
     if (!all_directions) {
         fprintf(stderr, "Error allocating direction buffer\n");
         return 1;
     }
     for (size_t i = 0; i < n_points; i++) {
-        points[i].direction = all_directions + (i * D);
+        points[i].direction = all_directions + (i * D); //setting up pointers, not filling data
     }
 
     // Create the kd-tree
@@ -58,16 +58,24 @@ int main(int argc, char *argv[]) {
     // Add the max angle for every point
     updated_max_angles(tree, points, n_points, k, D); // (3/10)
     
-    //Find the 20% barrier for the 20% lower angles and the numbe of border points
+    //Find the 30% barrier for border point threshold
     float p20 = _percentile(points, n_points, 30.0f);
     printf("(4/11) Border points percentile found\n");
     fflush(stdout);
     
     size_t n_border_points = n_of_border_points(points, n_points, p20);
+    if (n_border_points == 0) {
+        fprintf(stderr, "ERROR: no border points found\n");
+        return 1;
+    }
     point *border_points = malloc(n_border_points * sizeof(point));
 
     //Copy points into border points (only actual border points)
     copy_points_and_border(points, border_points, n_points, p20, -1);
+    if (!border_points) {
+    fprintf(stderr, "Error allocating border_points\n");
+    return 1;
+}
 
     // Calculate eps value for dbscan
     float eps = compute_eps(border_points, n_border_points);
@@ -77,7 +85,7 @@ int main(int argc, char *argv[]) {
     compute_all_directions(points, n_points, tree, k, D);
 
     //Assign border points a label
-    dbscan(border_points, n_border_points, 45*eps, 6);
+    dbscan(border_points, n_border_points, 10*eps, 6);
     printf("(7/11) Dbscan completed\n");
     fflush(stdout);
 
@@ -115,6 +123,10 @@ int main(int argc, char *argv[]) {
 
     //Final image creation
     int* finalImage = malloc(n_points * sizeof(int));
+    if (!finalImage) {
+        fprintf(stderr, "Error allocating finalImage\n");
+        return 1;
+    }
     for (int i = 0; i < n_points; i++) {
         finalImage[i] = points[i].labelll;
     }
@@ -126,9 +138,13 @@ int main(int argc, char *argv[]) {
 
     // free memory
     kd_free(tree);
+    kd_free(border_tree);
     free(all_directions);
     free(points);
+    free(border_points);
     free(img->data);
     free(img);
     free(finalImage);
+
+    return 0;
 }

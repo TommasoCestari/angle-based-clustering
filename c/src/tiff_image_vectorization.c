@@ -23,19 +23,11 @@ ImageTensor* load_tiff_as_tensor(const char* filename)
     if (!read_tiff_info(filename, &w, &h, &c))
         return NULL;
 
-    size_t total = (size_t)w * h * c; //Like int but used in c to store memory size parameters
-
-    ImageTensor* img = malloc(sizeof(ImageTensor));
-    img->width = w;
-    img->height = h;
-    img->channels = c;
-    img->data = malloc(total * sizeof(float));
-
     TIFF* tif = TIFFOpen(filename, "r");
     if (!tif) return NULL;
 
-    // Check if data is float and if 
-    uint16 bps, sampleformat, planar;
+    // Check if data is float
+    uint16_t bps, sampleformat, planar;
 
     TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bps);
     TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleformat);
@@ -53,7 +45,30 @@ ImageTensor* load_tiff_as_tensor(const char* filename)
         return NULL;
     }
 
+    size_t total = (size_t)w * h * c; //Like int but used in c to store memory size parameters
+
+    ImageTensor* img = malloc(sizeof(ImageTensor));
+    if (!img) {
+        TIFFClose(tif);
+        return NULL;
+    }
+    img->width = w;
+    img->height = h;
+    img->channels = c;
+    img->data = malloc(total * sizeof(float));
+    if (!img->data) {
+        free(img);
+        TIFFClose(tif);
+        return NULL;
+    }
+
     float* scanline = malloc(TIFFScanlineSize(tif));
+    if (!scanline) {
+        free(img->data);
+        free(img);
+        TIFFClose(tif);
+        return NULL;
+    }
 
     for (int y = 0; y < h; y++) {     //Scan row by row and memorize the value of the image into the tensor
         TIFFReadScanline(tif, scanline, y, 0);
