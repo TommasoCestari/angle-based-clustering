@@ -5,7 +5,6 @@
 #include "kd_tree.h"
 
 extern int D;
-
 const float PI_F = 3.14159265358979323846f;
 
 size_t n_of_border_points(const point* points, size_t n_points, float percentile){
@@ -23,6 +22,7 @@ size_t n_of_border_points(const point* points, size_t n_points, float percentile
         return n_border_points;
     }
 }
+
 void vector_subtraction(const float* vector_1, const float* vector_2, float* result_vector, int dims) {
     for(int i = 0; i < dims; i++) {
         result_vector[i] = vector_1[i] - vector_2[i];

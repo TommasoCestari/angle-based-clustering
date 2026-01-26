@@ -25,7 +25,7 @@ void copy_points_and_border (point* points, point* border_points, int n_points, 
                 border_points[b++] = points[i];
             }
         }
-    } else {printf("Parametro non corretto, copia non avvenuta");}
+    } else {printf("Wrong parameter, copying error");}
 }
 
 float compute_eps(const point* border_points, size_t n_border)
@@ -55,7 +55,7 @@ int range_query(point *points, int n_points, int idx, float eps, int *neighbors)
     for (int i = 0; i < n_points; i++) {
         if (i == idx) continue;
 
-        float d = modified_distance(&points[idx], &points[i], 0.1, D); //tra 0.2 e 1
+        float d = modified_distance(&points[idx], &points[i], 0.1, D); //tra 0 e 1
         if (d <= eps) {
             neighbors[count++] = i;
         }
@@ -148,8 +148,7 @@ void dbscan(point *points, int n_points, float eps, int minPts)
             continue;
         }
 
-        //printf("dbscan: seed point %d has %d neighbors -> expanding cluster %d\n",
-        //       i, n_neighbors, cluster_id);
+        //printf("dbscan: seed point %d has %d neighbors -> expanding cluster %d\n", i, n_neighbors, cluster_id);
         fflush(stdout);
 
         expand_cluster(points, n_points,
@@ -191,8 +190,6 @@ void save_raw_15band( const char* filename, float* data, size_t total_elements) 
     fwrite(data, sizeof(float), total_elements, f);
     fclose(f);
 }
-
-
 
 
 //Modified distance for DBSCAN
