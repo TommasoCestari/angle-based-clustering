@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
     compute_all_directions(points, n_points, tree, k, D);
 
     //Assign border points a label
-    dbscan(border_points, n_border_points, 45*eps, 6);
+    dbscan(border_points, n_border_points, 4.5*eps, 6);
     printf("(7/11) Dbscan completed\n");
     fflush(stdout);
 
