@@ -10,8 +10,8 @@ static inline void swap(float *a, float *b) {
 }
 
 static int partition(float *a, int left, int right, int pivot) {
-    float pv = a[pivot];
-    swap(&a[pivot], &a[right]);
+    float pv = a[pivot]; // pivot value
+    swap(&a[pivot], &a[right]); // move pivot to the end
 
     int store = left;
     for (int i = left; i < right; i++)
@@ -19,12 +19,12 @@ static int partition(float *a, int left, int right, int pivot) {
             swap(&a[i], &a[store++]);
 
     swap(&a[store], &a[right]);
-    return store;
+    return store; //  final position of the pivot in the array segment
 }
 
 static void quickselect(float *a, int left, int right, int k) {
     while (left < right) {
-        int pivot = left + rand() % (right - left + 1);
+        int pivot = left + rand() % (right - left + 1); // right - left + 1 are the elements in the current subarray
         pivot = partition(a, left, right, pivot);
 
         if (k == pivot) return;
@@ -32,18 +32,25 @@ static void quickselect(float *a, int left, int right, int k) {
         else left = pivot + 1;
     }
 }
+/*
+After the first call to partition() we know that 
+a[left .. p-1] < a[p]
+a[p]           = pivot
+a[p+1 .. right] >= a[p]
+*/
+
 
 float _percentile(const point* points, size_t number_of_points, float x_percent) {
     if (number_of_points <= 0) return 0.0f;
 
-    float *points_copy = malloc(number_of_points * sizeof(float));
+    float *points_copy = malloc(number_of_points * sizeof(float)); //quickselect modifies the array in place, if we simply used points array we would lose the image structure 
     if (!points_copy) {
         fprintf(stderr, "ERROR: Failed to allocate memory for percentile calculation\n");
         exit(EXIT_FAILURE);  // Or handle differently
     }
 
     for (size_t i = 0; i < number_of_points; i++){
-        points_copy[i] = points[i].max_angle;
+        points_copy[i] = points[i].max_angle; // points_copy is like points array but only with max_angle field
     }
 
     if (x_percent <= 0.0f) {
@@ -52,7 +59,7 @@ float _percentile(const point* points, size_t number_of_points, float x_percent)
             if (points_copy[i] < min_val) min_val = points_copy[i];
         }
         free(points_copy);
-        return min_val;
+        return min_val; // the 0th percentile returns the minimum value
     }
 
     if (x_percent >= 100.0f) {
@@ -62,12 +69,12 @@ float _percentile(const point* points, size_t number_of_points, float x_percent)
             if (points_copy[i] > max_val) max_val = points_copy[i];
         }
         free(points_copy);
-        return max_val;
+        return max_val; // // the 100th percentile returns the minimum value
     }
 
-    int k = (int)(x_percent * (number_of_points - 1) / 100.0f);
+    int k = (int)(x_percent * (number_of_points - 1) / 100.0f); // target index in the sorted array corresponding to the percentile
     quickselect(points_copy, 0, number_of_points - 1, k);
     float res = points_copy[k];
     free(points_copy);
-    return res;
+    return res; // returns the value of the k-th element (so its max_angle) in an array that is sorted until position k
 }

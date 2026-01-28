@@ -10,6 +10,10 @@
 #define NOISE     -2
 #define D 15
 
+
+/* If a = -1 copies every point that satisfies max_angle < p20 from points into border_points
+*  If a = 1 for those points with max_angle < p20 copied the label form border_points into points.labelll
+*/
 void copy_points_and_border (point* points, point* border_points, int n_points, float p20, int a){
     if(a == 1){
         int b = 0;
@@ -25,7 +29,7 @@ void copy_points_and_border (point* points, point* border_points, int n_points, 
                 border_points[b++] = points[i];
             }
         }
-    } else {printf("Parametro non corretto, copia non avvenuta");}
+    } else {printf("Wrong parameter, copy operation failed");}
 }
 
 float compute_eps(const point* border_points, size_t n_border)
@@ -55,7 +59,7 @@ int range_query(point *points, int n_points, int idx, float eps, int *neighbors)
     for (int i = 0; i < n_points; i++) {
         if (i == idx) continue;
 
-        float d = modified_distance(&points[idx], &points[i], 0.1, D); //tra 0.2 e 1
+        float d = modified_distance(&points[idx], &points[i], 0.7, D); //tra 0.2 e 1
         if (d <= eps) {
             neighbors[count++] = i;
         }

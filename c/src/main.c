@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     updated_max_angles(tree, points, n_points, k, D); // (3/10)
     
     //Find the 30% barrier for border point threshold
-    float p20 = _percentile(points, n_points, 30.0f);
+    float p20 = _percentile(points, n_points, 20.0f);
     printf("(4/11) Border points percentile found\n");
     fflush(stdout);
     
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     compute_all_directions(points, n_points, tree, k, D);
 
     //Assign border points a label
-    dbscan(border_points, n_border_points, 10*eps, 6);
+    dbscan(border_points, n_border_points, 5 * eps, 5);
     printf("(7/11) Dbscan completed\n");
     fflush(stdout);
 

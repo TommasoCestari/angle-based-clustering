@@ -42,6 +42,7 @@ float vector_dot_product(const float* vector_1, const float* vector_2, int dims)
     return sum;
 }
 
+
 float vector_compute_angle(const float* vector_1, const float* vector_2, int dims) {
     float dot = vector_dot_product(vector_1, vector_2, dims);
     float a_magnitude = vector_magnitude(vector_1, dims);
@@ -57,6 +58,8 @@ float vector_compute_angle(const float* vector_1, const float* vector_2, int dim
     return acosf(cosine_sim);
 }
 
+
+//Compute the mean feature vector of the provided neighbors.
 void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float* vector_mean){
     // Mean vector initialization
     for (int d = 0; d < dims; d++) {
@@ -72,6 +75,10 @@ void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float
     }
 }
 
+
+ /* For a query point, find k nearest neighbors, compute the mean neighbor vector,
+ * construct mean-centered vectors and compute angles between the mean vector and each neighbor vector.
+ */
 void vector_angle_result(point* query_point, const kd_node* tree, int k, int dims, float *angles){
     
     // Searching the neighbors of the query_point
@@ -107,9 +114,13 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
     for (int i = 0; i < k; i++) {
         angles[i] = vector_compute_angle(mean_vector, neighbors_vector[i], dims);
     }
-
 }
 
+
+/*
+ * For each query point, compute the maximum angle between query_to_centroid vector
+ * and its k nearest neighbors, store it in points[i].max_angle.
+ */
 void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims){
 
     float angles[k];

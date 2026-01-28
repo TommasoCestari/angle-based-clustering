@@ -133,6 +133,10 @@ static void kd_knn_search(const kd_node *node,
     }
 }
 
+
+/* Finds the k nearest neighbors of query in the kd-tree rooted at root and  
+*  writes them as knn_item structs into out
+*/
 void kd_knn(const kd_node *root, const point query, int k, knn_item *out)
 {
     int count = 0;
