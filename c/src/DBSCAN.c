@@ -38,7 +38,7 @@ float compute_eps(const point* border_points, size_t n_border)
     for (size_t i = 0; i < n_border; i++) {
         sum += border_points[i].mean_knn_dist;
     }
-    return 0.25f * (sum / n_border);
+    return 2.5f * (sum / n_border);
 }
 
 
@@ -208,8 +208,6 @@ void save_raw_15band( const char* filename, float* data, size_t total_elements) 
     fwrite(data, sizeof(float), total_elements, f);
     fclose(f);
 }
-
-
 
 
 //Modified distance for DBSCAN
