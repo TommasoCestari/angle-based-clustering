@@ -4,6 +4,8 @@
 #include "kd_tree.h"
 #define D 15
 
+static int current_axis;
+
 // Function to create a new node
 kd_node* kd_create_node(point point_, int axis) {
     kd_node* newNode = malloc(sizeof *newNode);
@@ -25,8 +27,8 @@ int compare_points(const void *a, const void *b)
     const point *pa = (const point *)a;
     const point *pb = (const point *)b;
 
-    if (pa->v[pa->axis] < pb->v[pb->axis]) return -1;
-    if (pa->v[pa->axis] > pb->v[pb->axis]) return  1;
+    if (pa->v[current_axis] < pb->v[current_axis]) return -1;
+    if (pa->v[current_axis] > pb->v[current_axis]) return  1;
     return 0;
 }
 
@@ -36,6 +38,7 @@ kd_node* kd_build(point *points_, size_t n, int depth)
     if (n == 0) return NULL;
 
     int axis = depth % D;
+    current_axis = axis; // Set before qsort
 
     for (size_t i = 0; i < n; i++)
         points_[i].axis = axis;

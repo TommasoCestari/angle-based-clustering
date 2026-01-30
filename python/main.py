@@ -22,11 +22,11 @@ def main():
         "type":"Polygon",
         "coordinates":[
             [
-                [11.113014,46.047705],
-                [11.113014,46.072737],
-                [11.137733,46.072737],
-                [11.137733,46.047705],
-                [11.113014,46.047705]
+                [11.088638,46.049598],
+                [11.088638,46.076654],
+                [11.135674,46.076654],
+                [11.135674,46.049598],
+                [11.088638,46.049598]
             ]
         ]}
 
@@ -52,7 +52,7 @@ def main():
     full_tensor = add_bands(image)     # (H, W, 15)
 
     # Save full tensor with rasterio
-    save_tensor_as_tiff(full_tensor, utm_bbox, "../data/sentinel_tensor_10m.tiff")
+    save_tensor_as_tiff(full_tensor, utm_bbox, "data/sentinel_tensor_10m.tiff")
 
     print("Final tensor shape:", full_tensor.shape)
 

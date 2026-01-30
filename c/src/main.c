@@ -70,22 +70,22 @@ int main(int argc, char *argv[]) {
     }
     point *border_points = malloc(n_border_points * sizeof(point));
 
+    //Compute angles for dbscan
+    compute_all_directions(points, n_points, tree, k, D);
+
     //Copy points into border points (only actual border points)
     copy_points_and_border(points, border_points, n_points, p20, -1);
     if (!border_points) {
     fprintf(stderr, "Error allocating border_points\n");
     return 1;
-}
+    }
 
     // Calculate eps value for dbscan
     float eps = compute_eps(border_points, n_border_points);
-    printf("(5/11) Copied border points and found eps\n");
-
-    //Compute angles for dbscan
-    compute_all_directions(points, n_points, tree, k, D);
+    printf("(6/11) Copied border points and found eps\n");
 
     //Assign border points a label
-    dbscan(border_points, n_border_points, 5 * eps, 5);
+    dbscan(border_points, n_border_points, 4.5f * eps, 8);
     printf("(7/11) Dbscan completed\n");
     fflush(stdout);
 

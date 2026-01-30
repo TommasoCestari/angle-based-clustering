@@ -59,7 +59,7 @@ int range_query(point *points, int n_points, int idx, float eps, int *neighbors)
     for (int i = 0; i < n_points; i++) {
         if (i == idx) continue;
 
-        float d = modified_distance(&points[idx], &points[i], 0.7, D); //tra 0.2 e 1
+        float d = modified_distance(&points[idx], &points[i], 0.3, D); //tra 0.2 e 1
         if (d <= eps) {
             neighbors[count++] = i;
         }
@@ -255,7 +255,7 @@ void compute_all_directions(point* points, int n_points,
         compute_point_direction(&points[i], tree, k, dims);
     }
 
-    printf("\r(6/11) Compute_all_directions: 100%% (%d/%d)\n", n_points, n_points);
+    printf("\r(5/11) Compute_all_directions: 100%% (%d/%d)\n", n_points, n_points);
 }
 
 

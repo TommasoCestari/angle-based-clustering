@@ -18,8 +18,11 @@ endif
 # Object files
 OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o $(SRC_DIR)/sorting.o $(SRC_DIR)/DBSCAN.o
 
+# Header dependencies
+HEADERS = c/include/*.h
+
 # Compile object files
-$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #$(KDTREE_DIR)/%.o: $(KDTREE_DIR)/%.c
@@ -30,7 +33,6 @@ main: $(OBJ)
 	$(CC) $(OBJ) -o $@$(EXE) $(LDFLAGS)
 
 # Clean compiled files
-RM = rm -f
 clean:
 	$(RM) $(SRC_DIR)/*.o main$(EXE) tiff_analyzer$(EXE) kd_tree$(EXE) text.txt
 
