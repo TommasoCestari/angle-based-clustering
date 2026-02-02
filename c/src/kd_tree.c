@@ -40,9 +40,6 @@ kd_node* kd_build(point *points_, size_t n, int depth)
     int axis = depth % D;
     current_axis = axis; // Set before qsort
 
-    for (size_t i = 0; i < n; i++)
-        points_[i].axis = axis;
-
     qsort(points_, n, sizeof(point), compare_points);
 
     size_t median = n / 2;
