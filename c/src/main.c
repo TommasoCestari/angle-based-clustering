@@ -7,10 +7,8 @@
 #include "knn_operations.h"
 #include "sorting.h"
 #include "DBSCAN.h"
-#include "debug_utils.h" 
 #define k 35
 #define D 15
-#define DEBUG 1
 
 
 int main(int argc, char *argv[]) {
@@ -52,27 +50,13 @@ int main(int argc, char *argv[]) {
         points[i].direction = all_directions + (i * D); //setting up pointers, not filling data
     }
 
-    #if DEBUG 
-    debug_print_points(points, n_points, 10);
-    #endif
-
     // Create the kd-tree
     kd_node *tree = kd_build(points, n_points, 0); // Checked and it actually works
     printf("(2/11) Kd-tree building completed\n");
     fflush(stdout);
-
-    #if DEBUG
-    printf("\n=== KD-Tree Structure (first 4 levels) ===\n");
-    debug_print_tree(tree, 0, 4);
-    debug_knn(tree, points[0], k);  // Test KNN on first point
-    #endif
     
     // Add the max angle for every point
     updated_max_angles(tree, points, n_points, k, D); // (3/10)
-
-    #if DEBUG
-    debug_max_angles(points, n_points);
-    #endif
     
     //Find the 30% barrier for border point threshold
     float p20 = _percentile(points, n_points, 20.0f);
@@ -88,10 +72,6 @@ int main(int argc, char *argv[]) {
 
     //Compute angles for dbscan
     compute_all_directions(points, n_points, tree, k, D);
-
-    #if DEBUG
-    debug_directions(points, n_points);
-    #endif
 
     //Copy points into border points (only actual border points)
     copy_points_and_border(points, border_points, n_points, p20, -1);
@@ -109,19 +89,10 @@ int main(int argc, char *argv[]) {
     printf("(7/11) Dbscan completed\n");
     fflush(stdout);
 
-    #if DEBUG
-    debug_labels(border_points, n_border_points);
-    #endif
-
     //Copy the label of border points to the actual points
     copy_points_and_border(points, border_points, n_points, p20, 1);
     printf("(8/11) Copied all labels into points[]\n");
     fflush(stdout);
-
-    #if DEBUG
-    printf("\n=== Labels after copy to points[] ===\n");
-    debug_labels(points, n_points);  // Check labels transferred correctly
-    #endif
 
     // Assign non border points a label = -4
     for (int i = 0; i < n_points; i++) {
