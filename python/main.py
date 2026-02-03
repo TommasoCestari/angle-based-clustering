@@ -52,7 +52,7 @@ def main():
     full_tensor = add_bands(image)     # (H, W, 15)
 
     # Save full tensor with rasterio
-    save_tensor_as_tiff(full_tensor, utm_bbox, "../data/sentinel_tensor_10m.tiff")
+    save_tensor_as_tiff(full_tensor, utm_bbox, "data/sentinel_tensor_10m.tiff")
 
     print("Final tensor shape:", full_tensor.shape)
 

@@ -1,41 +1,39 @@
-KDTREE_DIR = kdtree-0.5.7
 SRC_DIR = c/src
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
-    # Windows with MSYS2/MinGW
     CC = gcc
-    CFLAGS = -IC:/msys64/mingw64/include -Ic/include -I$(KDTREE_DIR)
+    CFLAGS = -IC:/msys64/mingw64/include -Ic/include 
     LDFLAGS = -LC:/msys64/mingw64/lib -ltiff -lm
     RM = del /Q
     EXE = .exe
 else
-    # Mac/Linux
     CC = gcc
-    CFLAGS = -I/opt/homebrew/opt/libtiff/include -Ic/include -I$(KDTREE_DIR)
+    CFLAGS = -I/opt/homebrew/opt/libtiff/include -Ic/include 
     LDFLAGS = -L/opt/homebrew/opt/libtiff/lib -ltiff -lm
     RM = rm -f
     EXE =
 endif
 
+# Object files
+OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o $(SRC_DIR)/sorting.o $(SRC_DIR)/DBSCAN.o 
 
+# Header dependencies
+HEADERS = c/include/*.h
 
-# Compile image_to_tensor
-image_to_tensor: $(SRC_DIR)/image_to_tensor.c $(SRC_DIR)/tiff_image_vectorization.c 
-	$(CC) $(CFLAGS) $^ -o $@$(EXE) $(LDFLAGS)
+# Compile object files
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile tiff_analyzer
-tiff_analyzer: $(SRC_DIR)/tiff_analyzer.c 
-	$(CC) $(CFLAGS) $< -o $@$(EXE) $(LDFLAGS)
+#$(KDTREE_DIR)/%.o: $(KDTREE_DIR)/%.c
+#	$(CC) $(CFLAGS) -c $< -o $@
 
-kd_tree: $(SRC_DIR)/kd_tree.c $(KDTREE_DIR)/kdtree.c
-	$(CC) $(CFLAGS) $^ -o $@$(EXE) $(LDFLAGS)
-
-# Compile all (default target)
-all: image_to_tensor tiff_analyzer kd_tree
+# Link everything into main (image_to_tensor)
+main: $(OBJ)
+	$(CC) $(OBJ) -o $@$(EXE) $(LDFLAGS)
 
 # Clean compiled files
 clean:
-	$(RM) image_to_tensor$(EXE) tiff_analyzer$(EXE) kd_tree$(EXE) text.txt
+	$(RM) $(SRC_DIR)/*.o main$(EXE) tiff_analyzer$(EXE) kd_tree$(EXE) text.txt
 
-.PHONY: all clean
+.PHONY: clean
