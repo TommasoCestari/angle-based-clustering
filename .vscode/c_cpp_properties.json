@@ -23,8 +23,7 @@
             "name": "macOS",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/kdtree-0.5.7",
-                "${workspaceFolder}/c/include",
+                "${workspaceFolder}/serial-implementation/include",
                 "/opt/homebrew/opt/libtiff/include",
                 "/opt/homebrew/include"
             ],
