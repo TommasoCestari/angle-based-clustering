@@ -3,3 +3,8 @@ __pycache__/
 
 # Virtual environment
 .venv/
+
+# Input images
+data/*.tiff
+data/*.aux.xml
+data/*.xml
