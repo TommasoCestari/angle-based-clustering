@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[]) {
     // Tensorize image
-    ImageTensor* img = load_tiff_as_tensor("data/sentinel_tensor_10m.tiff");
+    ImageTensor* img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff");
     if (!img) {
         printf("Error loading TIFF\n");
         return 1;

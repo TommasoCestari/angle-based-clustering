@@ -1,19 +1,31 @@
-.PHONY: serial mpi clean-serial clean-mpi
+ifeq ($(OS),Windows_NT)
+    RM = del /Q
+    EXE = .exe
+    # Windows uses 'mklink' or just copies. For simplicity, we'll copy.
+    LINK = copy /Y
+    # Convert path for Windows
+    P = $(subst /,\,$(1))
+else
+    RM = rm -f
+    EXE =
+    LINK = ln -sf
+    P = $(1)
+endif
 
-all: serial mpi
+.PHONY: serial mpi clean-serial clean-mpi
 
 serial:
 	$(MAKE) -C serial-implementation
-	ln -sf serial-implementation/main_serial ./main_serial
-
-mpi:
-	$(MAKE) -C mpi-implementation
-	ln -sf mpi-implementation/main_mpi ./main_mpi
+	$(LINK) $(call P,serial-implementation/main_serial$(EXE)) main_serial$(EXE)
 
 clean-serial:
 	-$(MAKE) -C serial-implementation clean
-	rm -f main_serial
+	$(RM) main_serial$(EXE)
+
+mpi:
+	$(MAKE) -C mpi-implementation
+	$(LINK) $(call P,mpi-implementation/main_mpi$(EXE)) main_mpi$(EXE)
 
 clean-mpi:
 	-$(MAKE) -C mpi-implementation clean
-	rm -f main_mpi
+	$(RM) main_mpi$(EXE)
