@@ -1,10 +1,8 @@
 ifeq ($(OS),Windows_NT)
-    RM = del /Q
+    RM = rm -f
     EXE = .exe
-    # Windows uses 'mklink' or just copies. For simplicity, we'll copy.
-    LINK = copy /Y
-    # Convert path for Windows
-    P = $(subst /,\,$(1))
+    LINK = cp -f
+    P = $(1)
 else
     RM = rm -f
     EXE =

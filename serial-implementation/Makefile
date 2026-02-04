@@ -6,9 +6,9 @@ ifeq ($(OS),Windows_NT)
     CC = gcc
     CFLAGS = -IC:/msys64/mingw64/include -I$(INC_DIR)
     LDFLAGS = -LC:/msys64/mingw64/lib -ltiff -lm
-    RM = del /Q
+    RM = rm -f
     EXE = .exe
-    OBJ_PATTERN = $(SRC_DIR)\*.o
+    OBJ_PATTERN = $(SRC_DIR)/*.o
 else
     CC = gcc
     CFLAGS = -I/opt/homebrew/opt/libtiff/include -I$(INC_DIR)
