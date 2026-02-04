@@ -8,11 +8,22 @@
 #include "knn_operations.h"
 #include "sorting.h"
 #include "DBSCAN.h"
-#define k 35
+//#define k 35
 #define D 15
 
+int k = 35;
 
 int main(int argc, char *argv[]) {
+
+    //char *env_val = getenv("PBS_ARRAY_INDEX");
+    //
+    //if (env_val != NULL) {
+    //    k = atoi(env_val);
+    //    printf("Detected k = %d\n", k);
+    //} else {
+    //    printf("Not running inside a PBS array.\n");
+    //    return 1;
+    //}
 
     time_t t0 = time(NULL);
     // Tensorize image
