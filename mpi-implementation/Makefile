@@ -1,3 +1,5 @@
+# Makefile for mpi-implementation
+
 SRC_DIR = src
 INC_DIR = include
 
