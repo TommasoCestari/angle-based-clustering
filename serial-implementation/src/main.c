@@ -27,7 +27,8 @@ int main(int argc, char *argv[]) {
 
     time_t t0 = time(NULL);
     // Tensorize image
-    ImageTensor* img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff");
+    // ImageTensor* img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff");
+    ImageTensor* img = load_tiff_as_tensor("/home/andreas.chini/my_programs/git/angle-based-clustering/data/sentinel_tensor_10m.tiff");
     if (!img) {
         printf("Error loading TIFF\n");
         return 1;
@@ -162,7 +163,8 @@ int main(int argc, char *argv[]) {
     }
 
     //Final image save
-    save_final_image("data/final_image.bin", finalImage, n_points);
+    //save_final_image("data/final_image.bin", finalImage, n_points);
+    save_final_image("/home/andreas.chini/my_programs/git/angle-based-clustering/data/sentinel_tensor_10m.tiff", finalImage, n_points);
     time_t t11 = (long) time(NULL) - t0;
     printf("(11/11) Exported the image in binary, [%02ld:%02ld]\n", (long)(int) t11/60, t11%60);
     fflush(stdout);
