@@ -23,11 +23,13 @@ int main(int argc, char *argv[]) {
 
     int width = 0;
     int height = 0;
+    time_t t0 = 0;
     ImageTensor* img = NULL;
+
 
     // Tensorize image, the image is stored only in rank 0
     if (world_rank == 0) {
-        time_t t0 = time(NULL);
+        t0 = time(NULL);
         //img = load_tiff_as_tensor("data/sentinel_tensor_10m.tiff", world_rank);
         img = load_tiff_as_tensor("/home/andreas.chini/my_programs/git/angle-based-clustering/data/sentinel_tensor_10m.tiff", world_rank);
         if (!img) {
@@ -109,7 +111,7 @@ int main(int argc, char *argv[]) {
     updated_max_angles(tree, points, n_points, k, D); //Parallelization changed
     if (world_rank == 0) {
         time_t t3 = (long) time(NULL) - t0;
-        printf(", [%02ld:%02ld]\n", p20, (long)(int) t3/60, t3%60);
+        printf(", [%02ld:%02ld]\n", (long)(int) t3/60, t3%60);
         fflush(stdout);
     }
 
@@ -209,7 +211,7 @@ int main(int argc, char *argv[]) {
         //save_final_image("data/final_image.bin", finalImage, n_points);
         save_final_image("/home/andreas.chini/my_programs/git/angle-based-clustering/data/final_image.bin", finalImage, n_points);
         time_t t11 = (long) time(NULL) - t0;
-        printf("(11/11) Exported the image in binary, [%02ld:%02ld]\n", (long)(int) t1/60, t1%60);
+        printf("(11/11) Exported the image in binary, [%02ld:%02ld]\n", (long)(int) t11/60, t11%60);
         fflush(stdout);
         free(finalImage);
     }
