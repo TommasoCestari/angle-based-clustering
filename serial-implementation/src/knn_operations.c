@@ -130,11 +130,11 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     for (size_t i = 0; i < n_points; i++){
 
         //Print the progress
-        if ((i % progress_interval) == 0 || i == n_points - 1) {
-            float percent = (float)(i + 1) / n_points * 100.0f;
-            printf("\rUpdated_max_angles: %.1f%% (%zu/%zu)", percent, i + 1, n_points);
-            fflush(stdout); // Force the output to show immediately
-        }
+        //if ((i % progress_interval) == 0 || i == n_points - 1) {
+        //    float percent = (float)(i + 1) / n_points * 100.0f;
+        //    printf("\rUpdated_max_angles: %.1f%% (%zu/%zu)", percent, i + 1, n_points);
+        //    fflush(stdout); // Force the output to show immediately
+        //}
         
         vector_angle_result(&points[i], tree, k, dims, angles);
 
@@ -143,7 +143,7 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
             if(angles[j] > max) max = angles[j];}
         points[i].max_angle = max;
     }
-    printf("\r(3/11) Updated_max_angles: 100%% (%zu/%zu)\n", n_points, n_points);
+    printf("\r(3/11) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);
     fflush(stdout); // Force the output to show immediately
 
 }

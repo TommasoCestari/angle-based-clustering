@@ -151,11 +151,11 @@ void dbscan(point *points, int n_points, float eps, int minPts)
     for (int i = 0; i < n_points; i++) {
         
         //Structure for printing the progress
-        if (i % progress_interval == 0 || i == n_points - 1) {
-            float percent = (float)(i + 1) / n_points * 100.0f;
-            printf("\rDbscan progress: %.1f%% (%d/%d)", percent, i + 1, n_points);
-            fflush(stdout);
-        }
+        //if (i % progress_interval == 0 || i == n_points - 1) {
+        //    float percent = (float)(i + 1) / n_points * 100.0f;
+        //    printf("\rDbscan progress: %.1f%% (%d/%d)", percent, i + 1, n_points);
+        //    fflush(stdout);
+        //}
 
         if (points[i].labelll != UNVISITED)
             continue;
@@ -172,8 +172,8 @@ void dbscan(point *points, int n_points, float eps, int minPts)
         expand_cluster(points, n_points,
                        i, cluster_id, eps, minPts);
 
-        printf("\ndbscan: finished cluster %d\n", cluster_id);
-        fflush(stdout);
+        //printf("\ndbscan: finished cluster %d\n", cluster_id);
+        //fflush(stdout);
 
         cluster_id++;
         free(neighbors);
@@ -245,17 +245,17 @@ void compute_all_directions(point* points, int n_points,
     for (int i = 0; i < n_points; i++) {
 
         //Printing of progress
-        if ((i % progress_interval) == 0 || i == n_points - 1) {
-            float percent = (float)(i + 1) / n_points * 100.0f;
-            printf("\rCompute_all_directions: %.1f%% (%d/%d)", percent, i, n_points);
-            fflush(stdout); // Force the output to show immediately
-        }
+        //if ((i % progress_interval) == 0 || i == n_points - 1) {
+        //    float percent = (float)(i + 1) / n_points * 100.0f;
+        //    printf("\rCompute_all_directions: %.1f%% (%d/%d)", percent, i, n_points);
+        //    fflush(stdout); // Force the output to show immediately
+        //}
         
         //Actual computing of the direction
         compute_point_direction(&points[i], tree, k, dims);
     }
 
-    printf("\r(5/11) Compute_all_directions: 100%% (%d/%d)\n", n_points, n_points);
+    printf("\r(5/11) Compute_all_directions: 100%% (%d/%d)", n_points, n_points);
 }
 
 

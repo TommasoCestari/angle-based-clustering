@@ -98,8 +98,8 @@ int main(int argc, char *argv[]) {
     //Copy points into border points (only actual border points)
     copy_points_and_border(points, border_points, n_points, p20, -1);
     if (!border_points) {
-    fprintf(stderr, "Error allocating border_points\n");
-    return 1;
+        fprintf(stderr, "Error allocating border_points\n");
+        return 1;
     }
 
     // Calculate eps value for dbscan
