@@ -294,8 +294,13 @@ void compute_all_directions(point* points, int n_points,
     MPI_Bcast(size, world_size, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    //Every rank calculaters it's part
-    float direction[n_points][dims];
+    //Every rank calculaters it's part 
+    //float direction[n_points][dims];
+    float *direction = malloc(n_points * dims * sizeof(float));
+        if (!direction) {
+        fprintf(stderr, "ERROR: malloc direction failed\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
         
         //Printing of progress
@@ -309,7 +314,7 @@ void compute_all_directions(point* points, int n_points,
 
         //Computing of the direction
         compute_point_direction(&points[i], tree, k, dims);
-        for(int d = 0; d < dims; d++) direction[i][d] = points[i].direction[d];
+        for(int d = 0; d < dims; d++) direction[i * dims + d] = points[i].direction[d];
         
     }
 
@@ -321,17 +326,23 @@ void compute_all_directions(point* points, int n_points,
     }
 
     //Every rank sends the part that it did to every other rank
-    MPI_Allgatherv(&direction[start[world_rank]][0], size[world_rank] * dims, 
-        MPI_FLOAT, &direction[0][0], recvcounts, 
-        displacement, MPI_FLOAT, MPI_COMM_WORLD);
+    //MPI_Allgatherv(&direction[start[world_rank]][0], size[world_rank] * dims, 
+    //    MPI_FLOAT, &direction[0][0], recvcounts, 
+    //    displacement, MPI_FLOAT, MPI_COMM_WORLD);
 
+    MPI_Allgatherv(&direction[start[world_rank] * dims], /* sendbuf */
+           size[world_rank] * dims,              /* sendcount (floats) */
+           MPI_FLOAT, direction,                           /* recvbuf (flat, all data) */
+           recvcounts, displacement,
+           MPI_FLOAT, MPI_COMM_WORLD);
+           
     //Now that the max_angles[] vector contains all the data every rank copies it to itself
     for (size_t i = 0; i < n_points; i++){
         for (size_t d = 0; d < dims; d++){
-            points[i].direction[d] = direction[i][d];
+            points[i].direction[d] = direction[i * dims + d];
         }
     }
-    
+    free(direction);
     if(world_rank == 0) printf("(6/11) Compute_all_directions: 100%% (%d/%d)", n_points, n_points);
 }
 

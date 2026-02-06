@@ -153,10 +153,16 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     MPI_Bcast(size, world_size, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    float angles[k], max_angles[n_points], mean_dists[n_points];
-    //Every rank calculaters it's part
+    float angles[k];
+    float *max_angles = malloc(n_points * sizeof(float));
+    float *mean_dists = malloc(n_points * sizeof(float));
+    if (!max_angles || !mean_dists) {
+        fprintf(stderr, "ERROR: malloc failed in updated_max_angles\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    //Every rank calculates its part
     for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
-        
         vector_angle_result(&points[i], tree, k, dims, angles);
         mean_dists[i] = points[i].mean_knn_dist;
 
@@ -170,14 +176,17 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     //send only the local chunk starting at start[world_rank]
     MPI_Allgatherv(&max_angles[start[world_rank]], size[world_rank], MPI_FLOAT,
         max_angles, size, start, MPI_FLOAT, MPI_COMM_WORLD);
-    MPI_Allgatherv(&mean_dists[start[world_rank]], size[world_rank], MPI_FLOAT, 
+    MPI_Allgatherv(&mean_dists[start[world_rank]], size[world_rank], MPI_FLOAT,
         mean_dists, size, start, MPI_FLOAT, MPI_COMM_WORLD);
 
-    //Now that the max_angles[] vector contains all the data every rank copies it to itself
+    //Now that the arrays contain all the data every rank copies it to itself
     for (size_t i = 0; i < n_points; i++){
         points[i].max_angle = max_angles[i];
         points[i].mean_knn_dist = mean_dists[i];
     }
+
+    free(max_angles);
+    free(mean_dists);
 
     if (world_rank == 0){
         printf("(3/11) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);

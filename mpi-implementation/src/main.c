@@ -176,6 +176,7 @@ int main(int argc, char *argv[]) {
         printf(", [%02ld:%02ld]\n", (long)(int) t6/60, t6%60); 
         fflush(stdout);
     }
+    
     //Assign border points a label
     dbscan(border_points, n_border_points, 1.3 * eps, 8); //Not parallelized
     if (world_rank == 0) {

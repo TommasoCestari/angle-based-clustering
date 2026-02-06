@@ -33,11 +33,17 @@ void non_border_points_assignment(point* points, const kd_node* border_tree, siz
     MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
 
-    //Every rank calculates it's part
-    int label[n_points];
-    for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
+    //Every rank calculates its part
+    int *label = malloc(n_points * sizeof(int));
+    if (!label) {
+        fprintf(stderr, "ERROR: malloc failed in non_border_points_assignment\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    // initialize to a sentinel (keep existing labels for border points)
+    for (size_t i = 0; i < n_points; i++) label[i] = points[i].labelll;
 
-        if (points[i].labelll != -4) {continue;} // skip border points
+    for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
+        if (points[i].labelll != -4) { continue; } // skip border points
 
         knn_item nearest[1];
         kd_knn(border_tree, points[i], 1, nearest); //Find the point nearest to the point in the kd_tree
@@ -47,11 +53,13 @@ void non_border_points_assignment(point* points, const kd_node* border_tree, siz
     }
 
     //Every rank sends the part that it did to every other rank
-    //Gatherv could be used instead but Allgatherv is used in case futher processing is needed in the future
-    MPI_Allgatherv(label, size[world_rank], MPI_INT, label, size, 
-        start, MPI_INT, MPI_COMM_WORLD);
-        
+    //send local chunk starting at &label[start[world_rank]]
+    MPI_Allgatherv(&label[start[world_rank]], size[world_rank], MPI_INT,
+        label, size, start, MPI_INT, MPI_COMM_WORLD);
+
     for (int i = 0; i < n_points; i++) {
         points[i].labelll = label[i];
     }
+
+    free(label);
 }
