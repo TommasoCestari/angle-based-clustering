@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     // Calculate eps value for dbscan
     float eps = compute_eps(border_points, n_border_points);
     time_t t6 = (long) time(NULL) - t0;
-    printf("(6/11) Copied border points and found eps = , [%02ld:%02ld]\n", eps, (long)(int) t6/60, t6%60);
+    printf("(6/11) Copied border points and found eps = %f, [%02ld:%02ld]\n", eps, (long)(int) t6/60, t6%60);
 
     //Assign border points a label
     dbscan(border_points, n_border_points, 1.3f * eps, 8);

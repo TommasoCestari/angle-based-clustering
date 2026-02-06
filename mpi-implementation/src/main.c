@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
     
     if (world_rank == 0) {
         time_t t5 = (long) time(NULL) - t0;
-        printf("(5/11) Copied border points and found eps, [%02ld:%02ld]\n", (long)(int) t5/60, t5%60); 
+        printf("(5/11) Copied border points and found eps = %f, [%02ld:%02ld]\n", eps,(long)(int) t5/60, t5%60); 
         fflush(stdout);
     }
 
