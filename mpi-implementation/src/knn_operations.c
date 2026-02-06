@@ -157,7 +157,7 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     float *max_angles = malloc(n_points * sizeof(float));
     float *mean_dists = malloc(n_points * sizeof(float));
     if (!max_angles || !mean_dists) {
-        fprintf(stderr, "ERROR: malloc failed in updated_max_angles\n");
+        printf("ERROR: [updated_max_angles] malloc failed in updated_max_angles\n"); fflush(stdout);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 

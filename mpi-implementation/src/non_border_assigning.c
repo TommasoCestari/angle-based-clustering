@@ -36,7 +36,7 @@ void non_border_points_assignment(point* points, const kd_node* border_tree, siz
     //Every rank calculates its part
     int *label = malloc(n_points * sizeof(int));
     if (!label) {
-        fprintf(stderr, "ERROR: malloc failed in non_border_points_assignment\n");
+        printf("ERROR: [non_border_points_assignment] malloc failed for label\n"); fflush(stdout);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
     // initialize to a sentinel (keep existing labels for border points)

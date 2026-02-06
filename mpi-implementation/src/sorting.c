@@ -47,16 +47,19 @@ float _percentile(const point* points, size_t number_of_points, float x_percent)
 
     //Routine checks to see if the input makes sense
     if (number_of_points == 0) {
-        fprintf(stderr, "ERROR: [_percentile] no points detected\n");
+        printf("ERROR: [_percentile] no points detected\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
         return 0.0f;
     }
     if (x_percent <= 0.0f) {
-        fprintf(stderr, "ERROR: [_percentile] percentile less then 0\%\n");
-        return 0.0f; 
+        printf("ERROR: [_percentile] percentile less then 0\%\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return 0.0f;
     }
     if (x_percent >= 100.0f) {
-        fprintf(stderr, "ERROR: [_percentile] percentile more then 100\%\n");
-        return 0.0f; 
+        printf("ERROR: [_percentile] percentile more then 100\%\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return 0.0f;
     }
 
     /*Since it's a fast calculation that uses all points at once it makes 
@@ -67,7 +70,8 @@ float _percentile(const point* points, size_t number_of_points, float x_percent)
     if (world_rank == 0){
         float *points_copy = malloc(number_of_points * sizeof(float)); //quickselect modifies the array in place, if we simply used points array we would lose the image structure 
         if (!points_copy) {
-            fprintf(stderr, "ERROR: [_percentile] Failed to allocate memory for percentile calculation\n");
+            printf("ERROR: [_percentile] Failed to allocate memory for percentile calculation\n"); fflush(stdout);
+            MPI_Abort(MPI_COMM_WORLD, 1);
             return 1.0f; 
         }
         

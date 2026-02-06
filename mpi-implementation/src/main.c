@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
             k = atoi(env_val);
             printf("Detected k = %d\n", k);
         } else {
-            printf("Error getting k\n");
-            return 1;
+            printf("ERROR: [main] Error getting k\n"); fflush(stdout);
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
     } 
 
@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
 
     if (world_rank != 0){
         if(k == 35){
-            printf("Not running inside a PBS array.\n");
-            return 1;
+            printf("ERROR: [main] Not running inside a PBS array.\n"); fflush(stdout);
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
 
@@ -87,10 +87,9 @@ int main(int argc, char *argv[]) {
 
     // Allocate memory for pixel pointers
     point *points = NULL;
-    float *all_directions = NULL;
     points = malloc(n_points * sizeof(point)); 
     if (!points) {
-        fprintf(stderr, "ERROR: [main] Error allocating pixel pointers memory\n");
+        printf("ERROR: [main] Error allocating pixel pointers memory\n"); fflush(stdout);
         MPI_Abort(MPI_COMM_WORLD, 1);
         }
     
@@ -102,6 +101,7 @@ int main(int argc, char *argv[]) {
     }
 
     //Allocate memory for all_directions, for later use
+    float *all_directions = NULL;
     all_directions = malloc(n_points * D * sizeof(float));
     if (!all_directions) {
         fprintf(stderr, "ERROR: [main] Error allocating direction buffer memory\n");
@@ -148,16 +148,16 @@ int main(int argc, char *argv[]) {
     //Calculate the number of border points
     size_t n_border_points = n_of_border_points(points, n_points, p20); //Parallelized
     if (n_border_points == 0) {
-        fprintf(stderr, "ERROR: [main] no border points found\n");
-        return 1;
+        printf("ERROR: [main] no border points found\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
     }
     
     //Copy points into border points (only actual border points), done the same for every rank
     point *border_points = malloc(n_border_points * sizeof(point));
     copy_points_and_border(points, border_points, n_points, p20, -1);
     if (!border_points) {
-        fprintf(stderr, "ERROR: [main] Error allocating border_points\n");
-        return 1;
+        printf("ERROR: [main] Error allocating border_points\n"); fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
     // Calculate eps value for dbscan
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
     }
     
     //Assign border points a label
-    dbscan(border_points, n_border_points, 1.3 * eps, 8); //Not parallelized
+    dbscan(border_points, n_border_points, 1.2 * eps, 8); //Not parallelized
     if (world_rank == 0) {
         time_t t7 = (long) time(NULL) - t0;
         printf("(7/11) Dbscan completed, [%02ld:%02ld]\n", (long)(int) t7/60, t7%60); 
@@ -216,12 +216,12 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
 
-    //Final image creation
+    // Final image creation, only done 1 time with rank 0
     if (world_rank == 0) {
         int* finalImage = malloc(n_points * sizeof(int));
         if (!finalImage) {
-            fprintf(stderr, "ERROR: [main] error allocating finalImage\n");
-            return 1;
+            printf("ERROR: [main] error allocating finalImage\n"); fflush(stdout);
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
         for (size_t i = 0; i < n_points; i++) {
             int x = points[i].x;

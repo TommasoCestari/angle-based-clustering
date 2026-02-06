@@ -22,7 +22,7 @@ ImageTensor* load_tiff_as_tensor(const char* filename, int world_rank)
         TIFFGetField(tif, TIFFTAG_PLANARCONFIG, &planar);
 
         if (bps != 32 || sampleformat != SAMPLEFORMAT_IEEEFP || planar != PLANARCONFIG_CONTIG) {
-            fprintf(stderr, "Unsupported TIFF format (Not 32 bit float or not planar configuration)\n");
+            printf("ERROR: [load_tiff_as_tensor] unsupported TIFF format (Not 32 bit float or not planar configuration)\n"); fflush(stdout);
             TIFFClose(tif);
             return NULL;
         }
