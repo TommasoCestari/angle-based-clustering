@@ -128,19 +128,6 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
  * For each query point, compute the maximum angle between query_to_centroid vector
  * and its k nearest neighbors, store it in points[i].max_angle.
  */
-void updated_max_angles_mpi(const kd_node* tree, point* points, size_t start, size_t end, int k, int dims){
-
-    float angles[k];
-
-    for (size_t i = start; i < end; i++){
-        vector_angle_result(&points[i], tree, k, dims, angles);
-        float max = angles[0];
-        for(int j = 1; j < k; j++) {
-            if(angles[j] > max) max = angles[j];
-        }
-        points[i].max_angle = max;
-    }
-}
 
 void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims){
 
@@ -166,11 +153,12 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     MPI_Bcast(size, world_size, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    float angles[k], max_angles[n_points];
+    float angles[k], max_angles[n_points], mean_dists[n_points];
     //Every rank calculaters it's part
     for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
         
         vector_angle_result(&points[i], tree, k, dims, angles);
+        mean_dists[i] = points[i].mean_knn_dist;
 
         float max = angles[0];
         for(int j=1; j<k; j++) {
@@ -182,10 +170,13 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     //send only the local chunk starting at start[world_rank]
     MPI_Allgatherv(&max_angles[start[world_rank]], size[world_rank], MPI_FLOAT,
         max_angles, size, start, MPI_FLOAT, MPI_COMM_WORLD);
+    MPI_Allgatherv(&mean_dists[start[world_rank]], size[world_rank], MPI_FLOAT, 
+        mean_dists, size, start, MPI_FLOAT, MPI_COMM_WORLD);
 
     //Now that the max_angles[] vector contains all the data every rank copies it to itself
     for (size_t i = 0; i < n_points; i++){
         points[i].max_angle = max_angles[i];
+        points[i].mean_knn_dist = mean_dists[i];
     }
 
     if (world_rank == 0){

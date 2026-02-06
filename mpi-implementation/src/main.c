@@ -10,9 +10,10 @@
 #include "sorting.h"
 #include "DBSCAN.h"
 #include "non_border_assigning.h"
-#define k 35
+//#define k 35
 #define D 15
 
+int k = 35;
 
 int main(int argc, char *argv[]) {
 
@@ -20,6 +21,27 @@ int main(int argc, char *argv[]) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    if (world_rank == 0){
+        char *env_val = getenv("PBS_ARRAYID");
+        if (!env_val) env_val = getenv("PBS_ARRAY_INDEX");
+        if (env_val != NULL) {
+            k = atoi(env_val);
+            printf("Detected k = %d\n", k);
+        } else {
+            printf("Error getting k\n");
+            return 1;
+        }
+    } 
+
+    MPI_Bcast(&k, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (world_rank != 0){
+        if(k == 35){
+            printf("Not running inside a PBS array.\n");
+            return 1;
+        }
+    }
 
     int width = 0;
     int height = 0;
@@ -155,7 +177,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
     //Assign border points a label
-    dbscan(border_points, n_border_points, 4.5*eps, 6); //Not parallelized
+    dbscan(border_points, n_border_points, 1.3 * eps, 8); //Not parallelized
     if (world_rank == 0) {
         time_t t7 = (long) time(NULL) - t0;
         printf("(7/11) Dbscan completed, [%02ld:%02ld]\n", (long)(int) t7/60, t7%60); 

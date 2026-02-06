@@ -38,7 +38,7 @@ float compute_eps(const point* border_points, size_t n_border)
     for (size_t i = 0; i < n_border; i++) {
         sum += border_points[i].mean_knn_dist;
     }
-    return 0.25f * (sum / n_border);
+    return (float) (sum / n_border);
 }
 
 

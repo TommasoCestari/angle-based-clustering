@@ -67,7 +67,7 @@ float compute_eps(const point* border_points, size_t n_border)
     //Allreduce sums the result of each process all toghether and gives the total sum back to everyone
     MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
     
-    return 2.5f * (sum / n_border);
+    return (float) (sum / n_border);
 }
 
 
@@ -88,7 +88,7 @@ int range_query(point *points, int n_points, int idx, float eps, int *neighbors)
     for (int i = 0; i < n_points; i++) {
         if (i == idx) continue;
 
-        float d = modified_distance(&points[idx], &points[i], 0.7, D); //tra 0.2 e 1
+        float d = modified_distance(&points[idx], &points[i], 0.3, D); //tra 0.2 e 1
         if (d <= eps) {
             neighbors[count++] = i;
         }
