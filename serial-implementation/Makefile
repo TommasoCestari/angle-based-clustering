@@ -1,3 +1,5 @@
+# Makefile for serial-implementation
+
 SRC_DIR = src
 INC_DIR = include
 
