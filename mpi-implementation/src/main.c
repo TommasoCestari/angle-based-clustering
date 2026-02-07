@@ -1,4 +1,4 @@
-#include <stdio.h>
+base_with_csv#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
@@ -10,6 +10,7 @@
 #include "sorting.h"
 #include "DBSCAN.h"
 #include "non_border_assigning.h"
+#include "log_results.h"
 //#define k 35
 #define D 15
 
@@ -22,38 +23,28 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    if (world_rank == 0){
-        char *env_val = getenv("PBS_ARRAYID");
-        if (!env_val) env_val = getenv("PBS_ARRAY_INDEX");
-        if (env_val != NULL) {
-            k = atoi(env_val);
-            printf("Detected k = %d\n", k);
-        } else {
-            printf("ERROR: [main] Error getting k\n"); fflush(stdout);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-    } 
-
-    MPI_Bcast(&k, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    if (world_rank != 0){
-        if(k == 35){
-            printf("ERROR: [main] Not running inside a PBS array.\n"); fflush(stdout);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
+    if (argc < 5) {
+        if (world_rank == 0) printf("Usage: %s <k> <mult_eps> <min_pts> <csv_path>\n", argv[0]);
+        MPI_Finalize(); 
+        return 1;
     }
+
+    int k = atoi(argv[1]);
+    float mult_eps = (float)atof(argv[2]);
+    int min_pts = atoi(argv[3]);
+    char* csv_path = argv[4];
 
     int width = 0;
     int height = 0;
-    time_t t0 = 0;
+    double t0=0, t1=0, t2=0, t3=0, t4=0, t5=0, t6=0, t7=0, t8=0, t9=0, t10=0, t11=0;
     ImageTensor* img = NULL;
 
 
     // Tensorize image, the image is stored only in rank 0
     if (world_rank == 0) {
-        t0 = time(NULL);
+        t0 = MPI_Wtime();
         //img = load_tiff_as_tensor("data/sentinel_tensor_10m.tiff", world_rank);
-        img = load_tiff_as_tensor("/home/andreas.chini/my_programs/git/angle-based-clustering/data/sentinel_tensor_10m.tiff", world_rank);
+        img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff", world_rank);
         if (!img) {
             printf("ERROR: [main] Error loading TIFF\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
@@ -70,8 +61,8 @@ int main(int argc, char *argv[]) {
     
     size_t n_points = (size_t)width * height; //size_t is like and unsigned long long int (64 bit) used to store memory values
     if (world_rank == 0) {
-        time_t t1 = (long) time(NULL) - t0;
-        printf("(n_points=%zu), [%02ld:%02ld]\n", n_points, (long)(int) t1/60, t1%60); //%zu is like %d but for size_t elements
+        t1 = MPI_Wtime() - t0;
+        printf("(n_points=%zu), [%02d:%05.2f]\n", n_points, (int)(t1/60), fmod(t1, 60.0));
         fflush(stdout);
     }
 
@@ -115,8 +106,8 @@ int main(int argc, char *argv[]) {
     kd_node *tree = kd_build(points, n_points, 0); 
     
     if (world_rank == 0) {
-        time_t t2 = (long) time(NULL) - t0;
-        printf("(2/11) Kd-tree building completed, [%02ld:%02ld]\n", (long)(int) t2/60, t2%60);
+        t2 = MPI_Wtime() - t0;
+        printf("(2/11) Kd-tree building completed, [%02d:%05.2f]\n", (int) t2/60, fmod(t2, 60.0));
         fflush(stdout);
     }
     
@@ -132,16 +123,16 @@ int main(int argc, char *argv[]) {
     // Add the max angle for every point
     updated_max_angles(tree, points, n_points, k, D); //Parallelization changed
     if (world_rank == 0) {
-        time_t t3 = (long) time(NULL) - t0;
-        printf(", [%02ld:%02ld]\n", (long)(int) t3/60, t3%60);
+        t3 = MPI_Wtime() - t0;
+        printf(", [%02d:%05.2f]\n", (int)(t3/60), fmod(t3, 60.0));
         fflush(stdout);
     }
 
     //Find the 20% barrier for border point threshold
     float p20 = _percentile(points, n_points, 20.0f); //Parallelized
     if (world_rank == 0) {
-        time_t t4 = (long) time(NULL) - t0;
-        printf("(4/11) Border points percentile found %f, [%02ld:%02ld]\n", p20, (long)(int) t4/60, t4%60);
+        t4 = MPI_Wtime() - t0;
+        printf("(4/11) Border points percentile found %f, [%02d:%05.2f]\n", p20, (int)(t4/60), fmod(t4, 60.0));
         fflush(stdout);
     }
     
@@ -164,32 +155,32 @@ int main(int argc, char *argv[]) {
     float eps = compute_eps(border_points, n_border_points); //Parallelized
     
     if (world_rank == 0) {
-        time_t t5 = (long) time(NULL) - t0;
-        printf("(5/11) Copied border points and found eps = %f, [%02ld:%02ld]\n", eps,(long)(int) t5/60, t5%60); 
+        t5 = MPI_Wtime() - t0;
+        printf("(5/11) Copied border points and found eps, [%02d:%05.2f]\n", (int)(t5/60), fmod(t5, 60.0)); 
         fflush(stdout);
     }
 
     //Compute angles for dbscan
     compute_all_directions(points, n_points, tree, k, D); //Parallelized
     if (world_rank == 0) {
-        time_t t6 = (long) time(NULL) - t0;
-        printf(", [%02ld:%02ld]\n", (long)(int) t6/60, t6%60); 
+        t6 = MPI_Wtime() - t0;
+        printf(", [%02d:%05.2f]\n", (int)(t6/60), fmod(t6, 60.0)); 
         fflush(stdout);
     }
     
     //Assign border points a label
-    dbscan(border_points, n_border_points, 1.2 * eps, 8); //Not parallelized
+    dbscan(border_points, n_border_points, mult_eps * eps, min_pts); //Not parallelized
     if (world_rank == 0) {
-        time_t t7 = (long) time(NULL) - t0;
-        printf("(7/11) Dbscan completed, [%02ld:%02ld]\n", (long)(int) t7/60, t7%60); 
+        t7 = MPI_Wtime() - t0;
+        printf("(7/11) Dbscan completed, [%02d:%05.2f]\n", (int)(t7/60), fmod(t7, 60.0));
         fflush(stdout);
     }
 
     //Copy the label of border points to the actual points, every rank does this
     copy_points_and_border(points, border_points, n_points, p20, 1);
     if (world_rank == 0) {
-        time_t t8 = (long) time(NULL) - t0;
-        printf("(8/11) Copied all labels into points[], [%02ld:%02ld]\n", (long)(int) t8/60, t8%60); 
+        t8 = MPI_Wtime() - t0;
+        printf("(8/11) Copied all labels into points[], [%02d:%05.2f]\n", (int)(t8/60), fmod(t8, 60.0)); 
         fflush(stdout);
     }
 
@@ -203,16 +194,16 @@ int main(int argc, char *argv[]) {
     //Create a kd-tree on the border points, a tree is needed for every rank
     kd_node *border_tree = kd_build(border_points, n_border_points, 0);
     if (world_rank == 0) {
-        time_t t9 = (long) time(NULL) - t0;
-        printf("(9/11) Built kd-tree for border point, [%02ld:%02ld]\n", (long)(int) t9/60, t9%60); 
+        t9 = MPI_Wtime() - t0;
+        printf("(9/11) Built kd-tree for border point, [%02d:%05.2f]\n", (int)(t9/60), fmod(t9, 60.0));   
         fflush(stdout);
     }
 
     //Assign of non border points to the nearest of border points
     non_border_points_assignment(points, border_tree, n_points); //Parallelized
     if (world_rank == 0) {
-        time_t t10 = (long) time(NULL) - t0;
-        printf("(10/11) Labeled all non border points, [%02ld:%02ld]\n", (long)(int) t10/60, t10%60); 
+        t10 = MPI_Wtime() - t0;
+        printf("(10/11) Labeled all non border points, [%02d:%05.2f]\n", (int)(t10/60), fmod(t10, 60.0));; 
         fflush(stdout);
     }
 
@@ -232,10 +223,15 @@ int main(int argc, char *argv[]) {
         
         //Final image save
         //save_final_image("data/final_image.bin", finalImage, n_points);
-        save_final_image("/home/andreas.chini/my_programs/git/angle-based-clustering/data/final_image.bin", finalImage, n_points);
-        time_t t11 = (long) time(NULL) - t0;
-        printf("(11/11) Exported the image in binary, [%02ld:%02ld]\n", (long)(int) t11/60, t11%60);
+        save_final_image("data/final_image.bin", finalImage, n_points);
+        t11 = MPI_Wtime() - t0;
+        printf("(11/11) Exported the image in binary, [%02d:%05.2f]\n", (int)(t11/60), fmod(t11, 60.0));
         fflush(stdout);
+
+        log_results(csv_path, (int)n_points, k, mult_eps, min_pts, world_size,
+                    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11);
+        printf("Results saved to %s\n", csv_path);
+
         free(finalImage);
     }
     

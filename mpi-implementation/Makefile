@@ -9,7 +9,7 @@ LDFLAGS = -ltiff -lm
 RM = rm -f
 
 # Object files
-OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization_mpi.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o $(SRC_DIR)/sorting.o $(SRC_DIR)/DBSCAN.o $(SRC_DIR)/non_border_assigning.o
+OBJ = $(SRC_DIR)/main.o $(SRC_DIR)/tiff_image_vectorization_mpi.o $(SRC_DIR)/kd_tree.o $(SRC_DIR)/knn_operations.o $(SRC_DIR)/sorting.o $(SRC_DIR)/DBSCAN.o $(SRC_DIR)/non_border_assigning.o $(SRC_DIR)/log_results.o
 
 # Header dependencies
 HEADERS = $(INC_DIR)/*.h

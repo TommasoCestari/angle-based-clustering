@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#Choose the number of nodes, processors per node (ppn), allocated RAM (:mem=16gb)
+#PBS -l nodes=4:ppn=1
+
+# Set max execution time
+#PBS -l walltime=00:05:30
+
+# Set the excution on the short queue
+#PBS -q shortCPUQ
+
+# Set name of job, output and error file
+#PBS -N out
+
+# Set k 
+#PBS -J 10-12
+
+module purge
+module load OpenMPI/4.1.6-GCC-13.2.0
+
+# Move to the directory where the job was submitted
+cd $PBS_O_WORKDIR
+
+EXE="./main_mpi"
+CSV_OUT="data/benchmark_results_k${PBS_ARRAY_INDEX}.csv"
+MULT_EPS=1.2
+MIN_PTS=8
+
+#$PBS_JOBNAME.o$PBS_JOBID.txt
+
+echo "=== Starting PBS job ==="
+echo "Job ID: $PBS_JOBID"
+echo "Running on node: $(hostname)"
+echo "Job started at: $(date)"
+echo ""
+
+
+# Run your program
+NP=$(wc -l < $PBS_NODEFILE)
+mpirun -np $NP --hostfile $PBS_NODEFILE $EXE $PBS_ARRAY_INDEX $MULT_EPS $MIN_PTS $CSV_OUT
+#mpirun -n 4 /home/andreas.chini/my_programs/git/angle-based-clustering/main_mpi
+echo ""
+echo "Job finished at: $(date)"
+echo "=== PBS job completed ==="
