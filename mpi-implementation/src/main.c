@@ -223,7 +223,9 @@ int main(int argc, char *argv[]) {
         
         //Final image save
         //save_final_image("data/final_image.bin", finalImage, n_points);
-        save_final_image("data/final_image.bin", finalImage, n_points);
+        char img_path[256];
+        sprintf(img_path, "data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
+        save_final_image(img_path, finalImage, n_points);
         t11 = MPI_Wtime() - t0;
         printf("(11/11) Exported the image in binary, [%02d:%05.2f]\n", (int)(t11/60), fmod(t11, 60.0));
         fflush(stdout);

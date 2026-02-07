@@ -12,8 +12,8 @@
 # Set name of job, output and error file
 #PBS -N out
 
-# Set k 
-#PBS -J 10-12
+# Runs 27 jobs but not more than 4 at the same time (possible fix for the error got when run 27 jobs all together)
+#PBS -J 0-26%4
 
 module purge
 module load OpenMPI/4.1.6-GCC-13.2.0
@@ -21,24 +21,32 @@ module load OpenMPI/4.1.6-GCC-13.2.0
 # Move to the directory where the job was submitted
 cd $PBS_O_WORKDIR
 
-EXE="./main_mpi"
-CSV_OUT="data/benchmark_results_k${PBS_ARRAY_INDEX}.csv"
-MULT_EPS=1.2
-MIN_PTS=8
-
-#$PBS_JOBNAME.o$PBS_JOBID.txt
-
-echo "=== Starting PBS job ==="
-echo "Job ID: $PBS_JOBID"
-echo "Running on node: $(hostname)"
-echo "Job started at: $(date)"
-echo ""
+# Define your 3 values for each parameter
+ALL_KS=(10 15 20)
+ALL_EPS=(1.2 1.8 2.5)
+ALL_MINS=(8 10 12)
 
 
-# Run your program
+# idx: 0 to 26
+idx=${PBS_ARRAY_INDEX}
+
+
+k_idx=$(( (idx / 9) % 3 )) # k_idx changes every nine jobs, so it's   0, 0, 0, 0, 0, 0, 0, 0, 0, 1, ...
+
+eps_idx=$(( (idx / 3) % 3 )) # eps_idx changes every three jobs, so   0, 0, 0, 1, 1, 1, 2, 2, 2, 0, ...
+
+min_idx=$(( idx % 3 )) # min_idx changes every job, so it is equal to 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, ...
+
+MY_K=${ALL_KS[$k_idx]}
+MY_EPS=${ALL_EPS[$eps_idx]}
+MY_MIN=${ALL_MINS[$min_idx]}
+
+# Create unique output
+CSV_OUT="data/res_k${MY_K}_e${MY_EPS}_m${MY_MIN}.csv"
+
 NP=$(wc -l < $PBS_NODEFILE)
-mpirun -np $NP --hostfile $PBS_NODEFILE $EXE $PBS_ARRAY_INDEX $MULT_EPS $MIN_PTS $CSV_OUT
-#mpirun -n 4 /home/andreas.chini/my_programs/git/angle-based-clustering/main_mpi
-echo ""
-echo "Job finished at: $(date)"
-echo "=== PBS job completed ==="
+
+EXE="./main_mpi"
+
+echo "Running Configuration: K=$MY_K, EPS=$MY_EPS, MIN=$MY_MIN on $NP ranks"
+mpirun -np $NP --hostfile $PBS_NODEFILE $EXE $MY_K $MY_EPS $MY_MIN $CSV_OUT
