@@ -1,4 +1,4 @@
-base_with_csv#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
@@ -11,7 +11,7 @@ base_with_csv#include <stdio.h>
 #include "DBSCAN.h"
 #include "non_border_assigning.h"
 #include "log_results.h"
-//#define k 35
+// define k 35
 #define D 15
 
 int k = 35;
