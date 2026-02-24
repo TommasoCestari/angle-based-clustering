@@ -106,7 +106,7 @@ static void kd_knn_search(const kd_node *node,
     if (!node) return;
 
     // Do not include the starting point
-    if (node->point.v != query.v) {
+    if (node->point.x != query.x || node->point.y != query.y) {
         float d = dist2(query, node->point);
         knn_insert(best, count, k, node->point, d);
     }
