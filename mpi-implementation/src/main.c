@@ -11,40 +11,39 @@
 #include "DBSCAN.h"
 #include "non_border_assigning.h"
 #include "log_results.h"
-// define k 35
 #define D 15
 
 int k = 35;
 
 int main(int argc, char *argv[]) {
 
-    MPI_Init(&argc, &argv); 
+    MPI_Init(&argc, &argv);
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    if (argc < 5) {
+    if (argc < 6) {
         if (world_rank == 0) printf("Usage: %s <k> <mult_eps> <min_pts> <csv_path>\n", argv[0]);
         MPI_Finalize(); 
         return 1;
     }
 
-    int k = atoi(argv[1]);
-    float mult_eps = (float)atof(argv[2]);
-    int min_pts = atoi(argv[3]);
-    char* csv_path = argv[4];
+    k = atoi(argv[1]); //Assign the k number of nearest neighbors search, 5 - 40 suggested
+    float mult_eps = (float)atof(argv[2]); //Assign the eps multiplier, 1.0 - 1.3 suggested
+    int min_pts = atoi(argv[3]); //Assign the minimum points for the kd_tree, 4 - 6 suggested
+    char* cpu_info = argv[4]; 
+    char* csv_path = argv[5];
 
     int width = 0;
     int height = 0;
     double t0=0, t1=0, t2=0, t3=0, t4=0, t5=0, t6=0, t7=0, t8=0, t9=0, t10=0, t11=0;
     ImageTensor* img = NULL;
 
-
     // Tensorize image, the image is stored only in rank 0
     if (world_rank == 0) {
         t0 = MPI_Wtime();
-        //img = load_tiff_as_tensor("data/sentinel_tensor_10m.tiff", world_rank);
-        img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff", world_rank);
+        img = load_tiff_as_tensor("/home/andreas.chini/my_programs/git/angle-based-clustering/data/sentinel_tensor_10m.tiff", world_rank);
+        //img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff", world_rank);
         if (!img) {
             printf("ERROR: [main] Error loading TIFF\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
@@ -169,7 +168,7 @@ int main(int argc, char *argv[]) {
     }
     
     //Assign border points a label
-    dbscan(border_points, n_border_points, mult_eps * eps, min_pts); //Not parallelized
+    int num_clusters = dbscan(border_points, n_border_points, mult_eps * eps, min_pts); //Not parallelized
     if (world_rank == 0) {
         t7 = MPI_Wtime() - t0;
         printf("(7/11) Dbscan completed, [%02d:%05.2f]\n", (int)(t7/60), fmod(t7, 60.0));
@@ -222,16 +221,16 @@ int main(int argc, char *argv[]) {
         }
         
         //Final image save
-        //save_final_image("data/final_image.bin", finalImage, n_points);
         char img_path[256];
-        sprintf(img_path, "data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
+        //sprintf(img_path, "data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
+        sprintf(img_path, "/home/andreas.chini/my_programs/git/angle-based-clustering/data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
         save_final_image(img_path, finalImage, n_points);
         t11 = MPI_Wtime() - t0;
         printf("(11/11) Exported the image in binary, [%02d:%05.2f]\n", (int)(t11/60), fmod(t11, 60.0));
         fflush(stdout);
 
         log_results(csv_path, (int)n_points, k, mult_eps, min_pts, world_size,
-                    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11);
+                    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, num_clusters, cpu_info);
         printf("Results saved to %s\n", csv_path);
 
         free(finalImage);
@@ -252,3 +251,4 @@ int main(int argc, char *argv[]) {
     MPI_Finalize();
     return 0;
 }
+

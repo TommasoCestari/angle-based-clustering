@@ -6,7 +6,7 @@ void copy_points_and_border (point* points, point* border_points, int n_points, 
 
 int range_query(point *points, int n_points, int idx, float eps, int *neighbors);
 
-void dbscan(point *points, int n_points, float eps, int minPts);
+int dbscan(point *points, int n_points, float eps, int minPts);
 
 float compute_eps(const point *border_points, size_t n_border);
 

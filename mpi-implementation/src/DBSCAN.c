@@ -165,7 +165,7 @@ static void expand_cluster(point *points, int n_points, int idx,
 }
 
 
-void dbscan(point *points, int n_points, float eps, int minPts)
+int dbscan(point *points, int n_points, float eps, int minPts)
 {
     int world_rank; 
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -212,6 +212,7 @@ void dbscan(point *points, int n_points, float eps, int minPts)
     }
 
     if(world_rank == 0) printf("dbscan done: found %d clusters\n", cluster_id);
+    return cluster_id;
 }
 
 
@@ -222,25 +223,23 @@ void save_final_image(const char* filename, int* finalImage, size_t n_points) {
         perror("Cannot open file to save finalImage");
         return;
     }
-    // save as 16-bit unsigned integers
-    for (size_t i = 0; i < n_points; i++) {
-        uint16_t val = (finalImage[i] < 0) ? 0 : (uint16_t)(finalImage[i] + 1);
-        fwrite(&val, sizeof(uint16_t), 1, f);
-    }
-    fclose(f);
-}
 
-void save_raw_15band( const char* filename, float* data, size_t total_elements) {
-    FILE* f = fopen(filename, "wb");
-    if (!f) {
-        perror("Cannot open file");
+    uint16_t* buffer = malloc(n_points * sizeof(uint16_t));
+    if (!buffer) {
+        perror("Memory allocation failed");
+        fclose(f);
         return;
     }
 
-    fwrite(data, sizeof(float), total_elements, f);
+    for (size_t i = 0; i < n_points; i++) {
+        buffer[i] = (finalImage[i] < 0) ? 0 : (uint16_t)(finalImage[i] + 1);
+    }
+
+    fwrite(buffer, sizeof(uint16_t), n_points, f);
+
+    free(buffer);
     fclose(f);
 }
-
 
 //Modified distance for DBSCAN
 void compute_point_direction(point* query_point, const kd_node* tree, int k, int dims)
