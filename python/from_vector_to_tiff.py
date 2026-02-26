@@ -12,7 +12,7 @@ with rasterio.open(original_tiff) as src:
     height = src.height
     transform = src.transform
     crs = src.crs
-    dtype = np.uint16  # match what we saved in C
+    dtype = np.uint16  
     profile = src.profile.copy()
 
 # Load finalImage binary file
@@ -24,7 +24,7 @@ print("Original shape: ", original_tiff)
 profile.update(
     dtype=dtype,
     count=1,
-    compress='lzw'  # optional: compress
+    compress='lzw'  
 )
 
 # Write the new TIFF
