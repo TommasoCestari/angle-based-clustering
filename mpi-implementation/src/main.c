@@ -22,21 +22,26 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+    // If we dont get all necessary parameter abort the program
     if (argc < 6) {
         if (world_rank == 0) printf("Usage: %s <k> <mult_eps> <min_pts> <csv_path>\n", argv[0]);
         MPI_Finalize(); 
         return 1;
     }
 
+    // Get values directly from the pbs job, these impact the final result and number of clusters found
     k = atoi(argv[1]); //Assign the k number of nearest neighbors search, 5 - 40 suggested
     float mult_eps = (float)atof(argv[2]); //Assign the eps multiplier, 1.0 - 1.3 suggested
-    int min_pts = atoi(argv[3]); //Assign the minimum points for the kd_tree, 4 - 6 suggested
+    int min_pts = atoi(argv[3]); //Assign the minimum points for the kd_tree, 4 - 8 suggested
+    
+    // Get info from cpu used to keep the results constant
+    // Standard is Intel(R) Xeon(R) Gold 6252N (100%), fast is Intel(R) Xeon(R) Gold 6418H (~150%), slow is Intel(R) Xeon(R) Gold 5118 CPU (~80%)
     char* cpu_info = argv[4]; 
     char* csv_path = argv[5];
 
     int width = 0;
     int height = 0;
-    double t0=0, t1=0, t2=0, t3=0, t4=0, t5=0, t6=0, t7=0, t8=0, t9=0, t10=0, t11=0;
+    double t0=0, t1=0, t2=0, t2_5=0, t2_6=0, t3=0, t4=0, t5=0, t6=0, t7=0, t8=0, t9=0, t10=0, t11=0;
     ImageTensor* img = NULL;
 
     // Tensorize image, the image is stored only in rank 0
@@ -55,7 +60,8 @@ int main(int argc, char *argv[]) {
         height = img->height;   
     }
 
-    MPI_Bcast(&width, 1, MPI_INT, 0, MPI_COMM_WORLD); // On rank 0 reads and on all other ranks it writes
+    // Send image dimentions to all ranks, Rank 0 reads and sends, all other ranks write
+    MPI_Bcast(&width, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&height, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
     size_t n_points = (size_t)width * height; //size_t is like and unsigned long long int (64 bit) used to store memory values
@@ -73,9 +79,10 @@ int main(int argc, char *argv[]) {
         pixel_data = malloc(n_points * D * sizeof(float));
     }
 
+    // Send the pixel data to ranks != 0 
     MPI_Bcast(pixel_data, n_points * D, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
-    // Allocate memory for pixel pointers
+    // Every rank allocates memory for pixel pointers
     point *points = NULL;
     points = malloc(n_points * sizeof(point)); 
     if (!points) {
@@ -91,8 +98,7 @@ int main(int argc, char *argv[]) {
     }
 
     //Allocate memory for all_directions, for later use
-    float *all_directions = NULL;
-    all_directions = malloc(n_points * D * sizeof(float));
+    float *all_directions = malloc(n_points * D * sizeof(float));
     if (!all_directions) {
         fprintf(stderr, "ERROR: [main] Error allocating direction buffer memory\n");
         MPI_Abort(MPI_COMM_WORLD, 1);;
@@ -103,25 +109,17 @@ int main(int argc, char *argv[]) {
 
     // Create the kd-tree for every rank
     kd_node *tree = kd_build(points, n_points, 0); 
-    
     if (world_rank == 0) {
         t2 = MPI_Wtime() - t0;
         printf("(2/11) Kd-tree building completed, [%02d:%05.2f]\n", (int) t2/60, fmod(t2, 60.0));
         fflush(stdout);
     }
     
-    size_t split = n_points / world_size;
-    size_t start = world_rank * split;
-    size_t end;
-    if (world_rank == world_size - 1) {
-        end = n_points;
-    } else {
-        end = start + split;
-    }
-
     // Add the max angle for every point
-    updated_max_angles(tree, points, n_points, k, D); //Parallelization changed
+    updated_max_angles(tree, points, n_points, k, D, &t2_5, &t2_6);
     if (world_rank == 0) {
+        t2_5 = t2_5 - t0;
+        t2_6 = t2_6 - t0;
         t3 = MPI_Wtime() - t0;
         printf(", [%02d:%05.2f]\n", (int)(t3/60), fmod(t3, 60.0));
         fflush(stdout);
@@ -167,7 +165,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
     
-    //Assign border points a label
+    //Assigns border points a label and returns the number of clusters found
     int num_clusters = dbscan(border_points, n_border_points, mult_eps * eps, min_pts); //Not parallelized
     if (world_rank == 0) {
         t7 = MPI_Wtime() - t0;
@@ -230,7 +228,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
 
         log_results(csv_path, (int)n_points, k, mult_eps, min_pts, world_size,
-                    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, num_clusters, cpu_info);
+                    t1, t2, t2_5, t2_6, t3, t4, t5, t6, t7, t8, t9, t10, t11, num_clusters, cpu_info);
         printf("Results saved to %s\n", csv_path);
 
         free(finalImage);

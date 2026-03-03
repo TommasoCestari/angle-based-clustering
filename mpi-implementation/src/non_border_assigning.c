@@ -25,7 +25,6 @@ void non_border_points_assignment(point* points, const kd_node* border_tree, siz
             size[p] = (int)n_points / world_size;
             if (p < remainder) size[p]++;
         }
-
     }
 
     //Send the array of results to the other processes

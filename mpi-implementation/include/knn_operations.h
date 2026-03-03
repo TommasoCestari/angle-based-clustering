@@ -4,7 +4,11 @@
 #include <stdbool.h>
 #include "kd_tree.h"
 
-//const float PI_F = 3.14159265358979323846f;
+typedef struct {
+    float max_angle;
+    float mean_knn_dist;
+} uma_results;
+
 size_t n_of_border_points(const point* points, size_t n_points, float percentile);
 
 void vector_subtraction(const float* vector_1, const float* vector_2, float* result_vector, int dims);
@@ -19,9 +23,7 @@ void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float
 
 void vector_angle_result(point* query_point, const kd_node* tree, int k, int dims, float *angles);
 
-void updated_max_angles_mpi(const kd_node* tree, point* points, size_t start, size_t end, int k, int dims);
-
-void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims);
+void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5, double* t2_6);
 
 #endif
 

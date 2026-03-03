@@ -129,7 +129,7 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
  * and its k nearest neighbors, store it in points[i].max_angle.
  */
 
-void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims){
+void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5, double* t2_6){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -154,39 +154,49 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
     float angles[k];
-    float *max_angles = malloc(n_points * sizeof(float));
-    float *mean_dists = malloc(n_points * sizeof(float));
-    if (!max_angles || !mean_dists) {
+    uma_results *results = malloc(n_points * sizeof(uma_results));
+    if (!results) {
         printf("ERROR: [updated_max_angles] malloc failed in updated_max_angles\n"); fflush(stdout);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
     //Every rank calculates its part
-    for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
+    for (size_t i = start[world_rank];
+     i < (start[world_rank] + size[world_rank]); i++) {
+
         vector_angle_result(&points[i], tree, k, dims, angles);
-        mean_dists[i] = points[i].mean_knn_dist;
 
         float max = angles[0];
-        for(int j=1; j<k; j++) {
-            if(angles[j] > max) max = angles[j];}
-        max_angles[i] = max;
+        for (int j = 1; j < k; j++) {
+            if (angles[j] > max)
+                max = angles[j];
+        }
+
+        results[i].max_angle = max;
+        results[i].mean_knn_dist = points[i].mean_knn_dist;
     }
+    *t2_5 = MPI_Wtime();
+
+    MPI_Datatype MPI_RESULT;
+    MPI_Type_contiguous(2, MPI_FLOAT, &MPI_RESULT);
+    MPI_Type_commit(&MPI_RESULT);
 
     //Every rank sends the part that it did to every other rank
     //send only the local chunk starting at start[world_rank]
-    MPI_Allgatherv(&max_angles[start[world_rank]], size[world_rank], MPI_FLOAT,
-        max_angles, size, start, MPI_FLOAT, MPI_COMM_WORLD);
-    MPI_Allgatherv(&mean_dists[start[world_rank]], size[world_rank], MPI_FLOAT,
-        mean_dists, size, start, MPI_FLOAT, MPI_COMM_WORLD);
-
+    MPI_Allgatherv(
+        &results[start[world_rank]], size[world_rank],
+        MPI_RESULT, results, size,
+        start, MPI_RESULT, MPI_COMM_WORLD
+    );
+    *t2_6 = MPI_Wtime();
     //Now that the arrays contain all the data every rank copies it to itself
-    for (size_t i = 0; i < n_points; i++){
-        points[i].max_angle = max_angles[i];
-        points[i].mean_knn_dist = mean_dists[i];
+    for (size_t i = 0; i < n_points; i++) {
+        points[i].max_angle = results[i].max_angle;
+        points[i].mean_knn_dist = results[i].mean_knn_dist;
     }
 
-    free(max_angles);
-    free(mean_dists);
+    MPI_Type_free(&MPI_RESULT);
+    free(results);
 
     if (world_rank == 0){
         printf("(3/11) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);

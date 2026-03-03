@@ -2,7 +2,7 @@ import rasterio
 import numpy as np
 
 # Paths
-original_tiff = "data/sentinel_tensor_original_small.tiff"
+original_tiff = "data/sentinel_tensor_10m.tiff"
 final_image_bin = "data/final_image.bin"
 output_tiff = "data/output_clusters.tiff"
 

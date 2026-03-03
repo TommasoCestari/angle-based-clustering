@@ -325,10 +325,6 @@ void compute_all_directions(point* points, int n_points,
     }
 
     //Every rank sends the part that it did to every other rank
-    //MPI_Allgatherv(&direction[start[world_rank]][0], size[world_rank] * dims, 
-    //    MPI_FLOAT, &direction[0][0], recvcounts, 
-    //    displacement, MPI_FLOAT, MPI_COMM_WORLD);
-
     MPI_Allgatherv(&direction[start[world_rank] * dims], /* sendbuf */
            size[world_rank] * dims,              /* sendcount (floats) */
            MPI_FLOAT, direction,                           /* recvbuf (flat, all data) */
