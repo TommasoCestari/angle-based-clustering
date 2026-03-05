@@ -12,15 +12,18 @@ with rasterio.open(original_tiff) as src:
     height = src.height
     transform = src.transform
     crs = src.crs
-    dtype = np.uint16  
+    dtype = np.int32
     profile = src.profile.copy()
 
 # Load finalImage binary file
-final_image = np.fromfile(final_image_bin, dtype=np.uint16)
+final_image = np.fromfile(final_image_bin, dtype=np.int32)
+expected = width * height
+if final_image.size != expected:
+    raise ValueError(f"Unexpected bin size: got {final_image.size}, expected {expected}")
 final_image = final_image.reshape((height, width))
 print("Final image shape: ", final_image.shape)
 print("Original shape: ", original_tiff)
-# Update profile for 1-band, uint16
+# Update profile for 1-band int32
 profile.update(
     dtype=dtype,
     count=1,

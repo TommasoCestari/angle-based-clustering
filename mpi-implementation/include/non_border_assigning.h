@@ -3,6 +3,6 @@
 #include <math.h>
 #include "kd_tree.h"
 
-void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points);
+void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points, double* t9_5);
 
 #endif

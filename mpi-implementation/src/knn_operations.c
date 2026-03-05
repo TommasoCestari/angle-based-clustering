@@ -129,7 +129,7 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
  * and its k nearest neighbors, store it in points[i].max_angle.
  */
 
-void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5, double* t2_6){
+void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -188,7 +188,6 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
         MPI_RESULT, results, size,
         start, MPI_RESULT, MPI_COMM_WORLD
     );
-    *t2_6 = MPI_Wtime();
     //Now that the arrays contain all the data every rank copies it to itself
     for (size_t i = 0; i < n_points; i++) {
         points[i].max_angle = results[i].max_angle;

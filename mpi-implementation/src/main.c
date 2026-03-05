@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     int width = 0;
     int height = 0;
-    double t0=0, t1=0, t2=0, t2_5=0, t2_6=0, t3=0, t4=0, t5=0, t6=0, t7=0, t8=0, t9=0, t10=0, t11=0;
+    double t0=0, t1=0, t2=0, t2_5=0, t3=0, t4=0, t5=0, t5_5=0, t6=0, t7=0, t8=0, t9=0, t9_5=0, t10=0, t11=0;
     ImageTensor* img = NULL;
 
     // Tensorize image, the image is stored only in rank 0
@@ -115,11 +115,10 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
     
-    // Add the max angle for every point
-    updated_max_angles(tree, points, n_points, k, D, &t2_5, &t2_6);
+    // Add the max angle for every point (Heavy operation 1)
+    updated_max_angles(tree, points, n_points, k, D, &t2_5);
     if (world_rank == 0) {
         t2_5 = t2_5 - t0;
-        t2_6 = t2_6 - t0;
         t3 = MPI_Wtime() - t0;
         printf(", [%02d:%05.2f]\n", (int)(t3/60), fmod(t3, 60.0));
         fflush(stdout);
@@ -157,16 +156,18 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
 
-    //Compute angles for dbscan
-    compute_all_directions(points, n_points, tree, k, D); //Parallelized
+    //Compute angles for dbscan (Heavy operation 2)
+    compute_all_directions(points, n_points, tree, k, D, &t5_5); //Parallelized
     if (world_rank == 0) {
         t6 = MPI_Wtime() - t0;
+        t5_5 = t5_5 - t0;
         printf(", [%02d:%05.2f]\n", (int)(t6/60), fmod(t6, 60.0)); 
         fflush(stdout);
     }
     
-    //Assigns border points a label and returns the number of clusters found
+    //Assigns border points a label and returns the number of clusters found (Heavy operation 3)
     int num_clusters = dbscan(border_points, n_border_points, mult_eps * eps, min_pts); //Not parallelized
+    MPI_Bcast(&num_clusters, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (world_rank == 0) {
         t7 = MPI_Wtime() - t0;
         printf("(7/11) Dbscan completed, [%02d:%05.2f]\n", (int)(t7/60), fmod(t7, 60.0));
@@ -192,49 +193,126 @@ int main(int argc, char *argv[]) {
     kd_node *border_tree = kd_build(border_points, n_border_points, 0);
     if (world_rank == 0) {
         t9 = MPI_Wtime() - t0;
+        t9_5 = t9_5 - t0;
         printf("(9/11) Built kd-tree for border point, [%02d:%05.2f]\n", (int)(t9/60), fmod(t9, 60.0));   
         fflush(stdout);
     }
 
-    //Assign of non border points to the nearest of border points
-    non_border_points_assignment(points, border_tree, n_points); //Parallelized
+    //Find the starting point(start[]) and the number of iterations(size[]) for every process
+    int size[world_size], start[world_size];
+    if (world_rank == 0) { //Let rank 0 find the start and n° of iterations
+        int remainder = n_points % world_size;
+        start[0] = 0;
+
+        for (int p = 0; p < world_size; p++){
+            if(p != 0) start[p] = start[p - 1] + size[p - 1];
+            size[p] = (int)n_points / world_size;
+            if (p < remainder) size[p]++;
+        }
+    }
+
+    //Send the array of results to the other processes
+    MPI_Bcast(size, world_size, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
+
+
+    //Assign of non border points to the nearest border point (Heavy operation 4)
+    // Split by spatial index, not points[] position, because points[] can be reordered.
+    size_t my_start = (size_t)start[world_rank];
+    size_t my_end = my_start + (size_t)size[world_rank];
+
+    for (size_t i = 0; i < n_points; i++){
+        size_t linear_idx = (size_t)points[i].y * (size_t)width + (size_t)points[i].x;
+        if (linear_idx < my_start || linear_idx >= my_end) { continue; }
+        if (points[i].labelll != -4) { continue; } // skip border points
+
+        knn_item nearest[1];
+        kd_knn(border_tree, points[i], 1, nearest); //Find nearest border point in kd_tree
+
+        point *b = &nearest[0].point_;
+        points[i].labelll = b->labelll;
+    }
+
+    // Remap DBSCAN noise label (-2) into a dedicated positive class.
+    // Cluster ids are [0, num_clusters-1], so use num_clusters for noise.
+    for (size_t i = 0; i < n_points; i++) {
+        size_t linear_idx = (size_t)points[i].y * (size_t)width + (size_t)points[i].x;
+        if (linear_idx < my_start || linear_idx >= my_end) { continue; }
+        if (points[i].labelll == -2) {
+            points[i].labelll = num_clusters;
+        }
+    }
+
+    //non_border_points_assignment(points, border_tree, n_points, &t9_5); //Parallelized
     if (world_rank == 0) {
         t10 = MPI_Wtime() - t0;
         printf("(10/11) Labeled all non border points, [%02d:%05.2f]\n", (int)(t10/60), fmod(t10, 60.0));; 
         fflush(stdout);
     }
 
+    MPI_File fh;
+    char img_path[256];
+    sprintf(img_path,
+            "/home/andreas.chini/my_programs/git/angle-based-clustering/data/img_k%d_e%.1f_m%d.bin",
+            k, mult_eps, min_pts);
+
+    MPI_File_open(MPI_COMM_WORLD,
+                  img_path,
+                  MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                  MPI_INFO_NULL,
+                  &fh);
+
+    MPI_File_set_size(fh, n_points * sizeof(int));
+
+    int local_n = size[world_rank];
+    int *local_buf = malloc(local_n * sizeof(int));
+    if (!local_buf) {
+        printf("ERROR: [main] Error allocating local_buf\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    for (int i = 0; i < local_n; i++) {
+        local_buf[i] = -1;
+    }
+
+    // Fill a contiguous spatial chunk [start, start+local_n) for this rank.
+    for (size_t i = 0; i < n_points; i++) {
+        size_t linear_idx = (size_t)points[i].y * (size_t)width + (size_t)points[i].x;
+        if (linear_idx < (size_t)start[world_rank] ||
+            linear_idx >= (size_t)start[world_rank] + (size_t)local_n) {
+            continue;
+        }
+        local_buf[linear_idx - (size_t)start[world_rank]] = points[i].labelll;
+    }
+
+    MPI_Offset file_off = (MPI_Offset)start[world_rank] * (MPI_Offset)sizeof(int);
+    MPI_File_write_at_all(
+        fh,
+        file_off,
+        local_buf,
+        local_n,
+        MPI_INT,
+        MPI_STATUS_IGNORE
+    );
+
+    MPI_File_close(&fh);
+
+    free(local_buf);
+
     // Final image creation, only done 1 time with rank 0
     if (world_rank == 0) {
-        int* finalImage = malloc(n_points * sizeof(int));
-        if (!finalImage) {
-            printf("ERROR: [main] error allocating finalImage\n"); fflush(stdout);
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        for (size_t i = 0; i < n_points; i++) {
-            int x = points[i].x;
-            int y = points[i].y;
-            size_t pixel_index = (size_t)y * width + x;  // Row-major order
-            finalImage[pixel_index] = points[i].labelll;
-        }
-        
-        //Final image save
-        char img_path[256];
-        //sprintf(img_path, "data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
-        sprintf(img_path, "/home/andreas.chini/my_programs/git/angle-based-clustering/data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
-        save_final_image(img_path, finalImage, n_points);
+
         t11 = MPI_Wtime() - t0;
         printf("(11/11) Exported the image in binary, [%02d:%05.2f]\n", (int)(t11/60), fmod(t11, 60.0));
         fflush(stdout);
 
         log_results(csv_path, (int)n_points, k, mult_eps, min_pts, world_size,
-                    t1, t2, t2_5, t2_6, t3, t4, t5, t6, t7, t8, t9, t10, t11, num_clusters, cpu_info);
+                    t1, t2, t2_5, t3, t4, t5, t5_5, t6, t7, t8, t9, t9_5, t10, t11, num_clusters, cpu_info);
         printf("Results saved to %s\n", csv_path);
 
-        free(finalImage);
+        //free(finalImage);
     }
     
-
     // free memory
     kd_free(tree);
     kd_free(border_tree);

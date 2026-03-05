@@ -8,7 +8,7 @@
 #include "knn_operations.h"
 #include "non_border_assigning.h"
 
-void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points){
+void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points, double* t9_5){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -50,15 +50,20 @@ void non_border_points_assignment(point* points, const kd_node* border_tree, siz
         point *b = &nearest[0].point_;
         label[i] = b->labelll;
     }
+    *t9_5 = MPI_Wtime();
 
-    //Every rank sends the part that it did to every other rank
-    //send local chunk starting at &label[start[world_rank]]
-    MPI_Allgatherv(&label[start[world_rank]], size[world_rank], MPI_INT,
-        label, size, start, MPI_INT, MPI_COMM_WORLD);
+    // Gather all labels to rank 0 only
+    MPI_Gatherv(&label[start[world_rank]], size[world_rank],
+                MPI_INT, label, size, start,
+                MPI_INT, 0, MPI_COMM_WORLD);
 
-    for (int i = 0; i < n_points; i++) {
-        points[i].labelll = label[i];
+    if (world_rank == 0) {
+        for (size_t i = 0; i < n_points; i++) {
+            points[i].labelll = label[i];
+        }
     }
 
     free(label);
 }
+
+
