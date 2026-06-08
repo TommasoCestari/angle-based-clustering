@@ -12,7 +12,7 @@ float compute_eps(const point *border_points, size_t n_border);
 
 void compute_point_direction(point* query_point, const kd_node* tree, int k, int dims);
 
-void compute_all_directions(point* points, int n_points, const kd_node* tree, int k, int dims, double* t6_5);
+void compute_all_directions(point* points, int n_points, const kd_node* tree, int k, int dims, double* t2_5);
 
 float modified_distance(const point *a, const point *b, float sigma_mod, int dims);
 

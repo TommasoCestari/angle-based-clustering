@@ -198,7 +198,7 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     free(results);
 
     if (world_rank == 0){
-        printf("(3/11) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);
+        printf("(3/10) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);
         fflush(stdout); // Force the output to show immediately
     }
 

@@ -267,13 +267,11 @@ void compute_point_direction(point* query_point, const kd_node* tree, int k, int
 
 
 void compute_all_directions(point* points, int n_points,
-                            const kd_node* tree, int k, int dims, double* t5_5)
+                            const kd_node* tree, int k, int dims, double* t4_5)
 {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
-    size_t progress_interval = (n_points >= 100) ? n_points/100 : 1;
 
     //Find the starting point(start[]) and the number of iterations(size[]) for every process
     int size[world_size], start[world_size];
@@ -286,6 +284,7 @@ void compute_all_directions(point* points, int n_points,
             size[p] = (int)n_points / world_size;
             if (p < remainder) size[p]++;
         }
+
     }
 
     //Send the array of results to the other processes
@@ -293,12 +292,14 @@ void compute_all_directions(point* points, int n_points,
     MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
 
     //Every rank calculaters it's part 
-    //float direction[n_points][dims];
     float *direction = malloc(n_points * dims * sizeof(float));
         if (!direction) {
         fprintf(stderr, "ERROR: malloc direction failed\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
+
+    //size_t progress_interval = (n_points >= 100) ? n_points/100 : 1;
+
     for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
         
         //Printing of progress
@@ -313,7 +314,10 @@ void compute_all_directions(point* points, int n_points,
         //Computing of the direction
         compute_point_direction(&points[i], tree, k, dims);
         for(int d = 0; d < dims; d++) direction[i * dims + d] = points[i].direction[d];
+        
     }
+
+    *t4_5 = MPI_Wtime();
 
     int recvcounts[world_size], displacement[world_size];
 
@@ -321,7 +325,7 @@ void compute_all_directions(point* points, int n_points,
         recvcounts[p] = size[p] * dims;
         displacement[p] = start[p] * dims;
     }
-    *t5_5 = MPI_Wtime();
+
     //Every rank sends the part that it did to every other rank
     MPI_Allgatherv(&direction[start[world_rank] * dims], /* sendbuf */
            size[world_rank] * dims,              /* sendcount (floats) */
@@ -336,7 +340,7 @@ void compute_all_directions(point* points, int n_points,
         }
     }
     free(direction);
-    if(world_rank == 0) printf("(6/11) Compute_all_directions: 100%% (%d/%d)", n_points, n_points);
+    if(world_rank == 0) printf("(6/10) Compute_all_directions: 100%% (%d/%d)", n_points, n_points);
 }
 
 

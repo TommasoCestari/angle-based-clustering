@@ -1,10 +1,13 @@
 import rasterio
 import numpy as np
+from pathlib import Path
 
 # Paths
-original_tiff = "data/sentinel_tensor_10m.tiff"
-final_image_bin = "data/final_image.bin"
-output_tiff = "data/output_clusters.tiff"
+project_root = Path(__file__).resolve().parents[1]
+data_dir = project_root / "data"
+original_tiff = data_dir / "sentinel_tensor_10m.tiff"
+final_image_bin = data_dir / "final_image.bin"
+output_tiff = data_dir / "output_clusters.tiff"
 
 # Open original TIFF to read metadata
 with rasterio.open(original_tiff) as src:
@@ -12,18 +15,15 @@ with rasterio.open(original_tiff) as src:
     height = src.height
     transform = src.transform
     crs = src.crs
-    dtype = np.int32
+    dtype = np.uint32  
     profile = src.profile.copy()
 
 # Load finalImage binary file
-final_image = np.fromfile(final_image_bin, dtype=np.int32)
-expected = width * height
-if final_image.size != expected:
-    raise ValueError(f"Unexpected bin size: got {final_image.size}, expected {expected}")
+final_image = np.fromfile(final_image_bin, dtype=np.uint32)
 final_image = final_image.reshape((height, width))
 print("Final image shape: ", final_image.shape)
 print("Original shape: ", original_tiff)
-# Update profile for 1-band int32
+# Update profile for 1-band, uint16
 profile.update(
     dtype=dtype,
     count=1,
