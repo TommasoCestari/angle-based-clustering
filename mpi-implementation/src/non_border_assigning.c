@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 #include <mpi.h>
 #include "kd_tree.h"
@@ -130,7 +131,7 @@ void get_local_chunk(long int n_points, int* local_size, int* local_start) {
 
 
 void data_transfer(int world_size, int world_rank, int image_width, int image_height, 
-                    int n_total_points, int local_size, label* local_labels){
+                    int n_total_points, int* local_size, label** local_labels){
     MPI_Datatype create_label_type() {
         MPI_Datatype label_type;
         int blocklengths[3] = {1, 1, 1};
@@ -147,6 +148,8 @@ void data_transfer(int world_size, int world_rank, int image_width, int image_he
     }
 
     MPI_Datatype MPI_LABEL = create_label_type();
+    int old_local_size = *local_size;
+    label* old_local_labels = *local_labels;
 
     // 1. Calculate target ranges based on total flat pixels
     int TOTAL_POINTS = image_height * image_width; // e.g., 3 * 3 = 9
@@ -154,9 +157,9 @@ void data_transfer(int world_size, int world_rank, int image_width, int image_he
 
     // 2. Count how many elements go to each rank using flat index
     int* send_counts = (int*)calloc(world_size, sizeof(int));
-    for (int i = 0; i < local_size; i++) {
+    for (int i = 0; i < old_local_size; i++) {
         // Convert 2D coordinates back to the global 1D position
-        int global_idx = (local_labels[i].x * image_width) + local_labels[i].y;
+        int global_idx = (old_local_labels[i].y * image_width) + old_local_labels[i].x;
 
         int target_rank = global_idx / range_per_rank; 
         if (target_rank >= world_size) target_rank = world_size - 1; 
@@ -172,18 +175,18 @@ void data_transfer(int world_size, int world_rank, int image_width, int image_he
     }
 
     // 4. Pack data into the flat send buffer
-    label* send_buf = (label*)malloc(local_size * sizeof(label));
+    label* send_buf = (label*)malloc(old_local_size * sizeof(label));
     int* current_idx = (int*)malloc(world_size * sizeof(int));
     memcpy(current_idx, send_displs, world_size * sizeof(int));
 
     // 4. Pack data into the flat send buffer using flat index
-    for (int i = 0; i < local_size; i++) {
-        int global_idx = (local_labels[i].x * image_width) + local_labels[i].y;
+    for (int i = 0; i < old_local_size; i++) {
+        int global_idx = (old_local_labels[i].y * image_width) + old_local_labels[i].x;
 
         int target_rank = global_idx / range_per_rank;
         if (target_rank >= world_size) target_rank = world_size - 1;
 
-        send_buf[current_idx[target_rank]++] = local_labels[i];
+        send_buf[current_idx[target_rank]++] = old_local_labels[i];
     }
 
     // 5. Share counts so everyone knows what they are receiving
@@ -202,6 +205,10 @@ void data_transfer(int world_size, int world_rank, int image_width, int image_he
     // 7. The Global Shuffle
     MPI_Alltoallv(send_buf, send_counts, send_displs, MPI_LABEL,
                   recv_buf, recv_counts, recv_displs, MPI_LABEL, MPI_COMM_WORLD);
+
+    free(old_local_labels);
+    *local_labels = recv_buf;
+    *local_size = total_recv_size;
 
     // Free memory
     free(send_counts); free(send_displs); free(recv_counts); free(recv_displs);

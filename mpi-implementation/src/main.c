@@ -194,11 +194,11 @@ int main(int argc, char *argv[]) {
     //Assign of non border points to the nearest of border points
     int local_start, local_size;
     get_local_chunk(n_points, &local_size, &local_start);
-    label* local_labels = malloc(local_size * sizeof(point));
+    label* local_labels = malloc(local_size * sizeof(label));
 
     non_border_points_assignment_2(points, border_tree, n_points, local_labels);
     if (world_rank == 0) {t7_5 = MPI_Wtime() - t0;} // Non border points
-    data_transfer(world_size, world_rank, width, height, n_points, local_size, local_labels);
+    data_transfer(world_size, world_rank, width, height, n_points, &local_size, &local_labels);
 
     for (int i = 0; i < local_size; i++) {
         if (local_labels[i].labelll < 0) {
