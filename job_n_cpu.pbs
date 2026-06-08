@@ -14,7 +14,7 @@
 #PBS -N out
 
 module purge
-module load OpenMPI/4.1.6-GCC-13.2.0
+module load mpi4py/3.1.4-gompi-2023a
 
 #$PBS_JOBNAME.o$PBS_JOBID.txt
 
