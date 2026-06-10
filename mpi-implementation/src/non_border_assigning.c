@@ -11,7 +11,7 @@
 #include "knn_operations.h"
 #include "non_border_assigning.h"
 
-void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points){
+/*void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -64,7 +64,7 @@ void non_border_points_assignment(point* points, const kd_node* border_tree, siz
     }
 
     free(label);
-}
+}*/
 
 void non_border_points_assignment_2(point* points, const kd_node* border_tree, size_t n_points, label* local_labels){
 
@@ -106,7 +106,8 @@ void non_border_points_assignment_2(point* points, const kd_node* border_tree, s
 }
 
 
-void get_local_chunk(long int n_points, int* local_size, int* local_start) {
+void get_local_chunk(long int n_points, int* local_size, 
+                     int* local_start) {
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
