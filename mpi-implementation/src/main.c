@@ -217,7 +217,10 @@ int main(int argc, char *argv[]) {
     sprintf(img_path, "/home/andreas.chini/my_programs/git/angle-based-clustering/data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
     reorder_and_print(width, local_labels, local_size, img_path);
 
+    //non_border_points_assignment(points, border_tree, n_points, width, img_path, &t7_5); 
+
     if (world_rank == 0) {
+        //t7_5 = t7_5 - t0;
         t9 = MPI_Wtime() - t0; // File printing
         printf("(10/10) Exported the image in binary, [%02d:%05.2f]\n", (int)(t9/60), fmod(t9, 60.0));; 
         fflush(stdout);
@@ -225,8 +228,6 @@ int main(int argc, char *argv[]) {
 
     // Final image creation, only done 1 time with rank 0
     if (world_rank == 0) {
-
-
         log_results(csv_path, (int)n_points, k, mult_eps, min_pts, world_size,
                     t1, t2, t2_5, t3, t4, t4_5, t5, t6, t7, t7_5, t8, t9, num_clusters, cpu_info);
         printf("Results saved to %s\n", csv_path);

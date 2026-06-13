@@ -11,62 +11,38 @@
 #include "knn_operations.h"
 #include "non_border_assigning.h"
 
-/*void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points){
+MPI_Datatype create_label_type() {
+    MPI_Datatype label_type;
+    int blocklengths[3] = {1, 1, 1};
+    MPI_Aint displacements[3];
+    // Assumes x, y, and labelll are all ints based on your snippet
+    MPI_Datatype types[3] = {MPI_INT, MPI_INT, MPI_INT}; 
 
-    int world_size, world_rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    displacements[0] = offsetof(label, x);
+    displacements[1] = offsetof(label, y);
+    displacements[2] = offsetof(label, labelll);
 
-    //Find the starting point(start[]) and the number of iterations(size[]) for every process
-    int size[world_size], start[world_size];
-    if (world_rank == 0) { //Let rank 0 find the start and n° of iterations
-        int remainder = n_points % world_size;
-        start[0] = 0;
+    MPI_Type_create_struct(3, blocklengths, displacements, types, &label_type);
+    MPI_Type_commit(&label_type);
+    return label_type;
+}
 
-        for (int p = 0; p < world_size; p++){
-            if(p != 0) start[p] = start[p - 1] + size[p - 1];
-            size[p] = (int)n_points / world_size;
-            if (p < remainder) size[p]++;
-        }
-    }
+int compare_labels(const void* a, const void* b, void* thunk) {
+    const label* labelA = (const label*)a;
+    const label* labelB = (const label*)b;
+    
+    int image_width = *(int*)thunk;
 
-    //Send the array of results to the other processes
-    MPI_Bcast(size, world_size, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
+    int indexA = (labelA->y * image_width) + labelA->x;
+    int indexB = (labelB->y * image_width) + labelB->x;
 
+    if (indexA < indexB) return -1;
+    if (indexA > indexB) return 1;
+    return 0;
+}
 
-    //Every rank calculates its part
-    int *label = malloc(n_points * sizeof(int));
-    if (!label) {
-        printf("ERROR: [non_border_points_assignment] malloc failed for label\n"); fflush(stdout);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-    // initialize to a sentinel (keep existing labels for border points)
-    for (size_t i = 0; i < n_points; i++) label[i] = points[i].labelll;
-
-    for (size_t i = start[world_rank]; i < (start[world_rank] + size[world_rank]); i++){
-        if (points[i].labelll != -4) { continue; } // skip border points
-
-        knn_item nearest[1];
-        kd_knn(border_tree, points[i], 1, nearest); //Find the point nearest to the point in the kd_tree
-
-        point *b = &nearest[0].point_;
-        label[i] = b->labelll;
-    }
-
-    //Every rank sends the part that it did to every other rank
-    //send local chunk starting at &label[start[world_rank]]
-    MPI_Allgatherv(&label[start[world_rank]], size[world_rank], MPI_INT,
-        label, size, start, MPI_INT, MPI_COMM_WORLD);
-
-    for (int i = 0; i < n_points; i++) {
-        points[i].labelll = label[i];
-    }
-
-    free(label);
-}*/
-
-void non_border_points_assignment_2(point* points, const kd_node* border_tree, size_t n_points, label* local_labels){
+void non_border_points_assignment(point* points, const kd_node* border_tree, size_t n_points, 
+                                    int image_width, char* img_path, double * t7_5){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -74,18 +50,9 @@ void non_border_points_assignment_2(point* points, const kd_node* border_tree, s
 
     int local_size, local_start;
     get_local_chunk(n_points, &local_size, &local_start);
+    label* local_labels = malloc(local_size * sizeof(label));
 
     // Every rank calculates its part
-    int *label = malloc(n_points * sizeof(int));
-    if (!label) {
-        printf("ERROR: [non_border_points_assignment] malloc failed for label\n"); fflush(stdout);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-    
-    // Initialize to a sentinel
-    for (size_t i = 0; i < n_points; i++) label[i] = points[i].labelll;
-
-    // Local computation
     for (size_t i = local_start; i < (local_start + local_size); i++){
         local_labels[i-local_start].x = points[i].x;
         local_labels[i-local_start].y = points[i].y;
@@ -102,7 +69,65 @@ void non_border_points_assignment_2(point* points, const kd_node* border_tree, s
         local_labels[i-local_start].labelll = b->labelll;
     }
 
-    free(label);
+    //Every rank sends the part that it did to every other rank
+    int size[world_size], start[world_size];
+    MPI_Allgather(&local_size, 1, MPI_INT, size, 1, MPI_INT, MPI_COMM_WORLD);
+    MPI_Allgather(&local_start, 1, MPI_INT, start, 1, MPI_INT, MPI_COMM_WORLD);
+
+    MPI_Datatype MPI_LABEL = create_label_type();
+
+    label* global_labels = NULL;
+    if (world_rank == 0) {
+        global_labels = malloc(n_points * sizeof(label));
+    }
+
+    *t7_5 = MPI_Wtime();
+    // Corrected MPI_Gatherv call
+    MPI_Gatherv(local_labels, local_size, MPI_LABEL, global_labels,
+                size, start, MPI_LABEL, 0, MPI_COMM_WORLD);
+
+    if (world_rank == 0) {
+        qsort_r(global_labels, n_points, sizeof(label), compare_labels, &image_width);
+        FILE* f = fopen(img_path, "wb");
+        if (f == NULL) {
+            fprintf(stderr, "ERROR: Could not open file %s for writing\n", img_path);
+        } else {
+            for (size_t i = 0; i < n_points; i++) {
+                fwrite(&(global_labels[i].labelll), sizeof(int), 1, f);
+            }
+            fclose(f);
+        }
+        free(global_labels);
+    }
+    free(local_labels);
+    MPI_Type_free(&MPI_LABEL);
+}
+
+void non_border_points_assignment_2(point* points, const kd_node* border_tree, size_t n_points, label* local_labels){
+
+    int world_size, world_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    int local_size, local_start;
+    get_local_chunk(n_points, &local_size, &local_start);
+
+    // Every rank calculates its part
+    for (size_t i = local_start; i < (local_start + local_size); i++){
+        local_labels[i-local_start].x = points[i].x;
+        local_labels[i-local_start].y = points[i].y;
+
+        if (points[i].labelll != -4) { // skip border points
+            local_labels[i-local_start].labelll = points[i].labelll;
+            continue; 
+        } 
+
+        knn_item nearest[1];
+        kd_knn(border_tree, points[i], 1, nearest); 
+
+        point *b = &nearest[0].point_;
+        local_labels[i-local_start].labelll = b->labelll;
+    }
 }
 
 
@@ -133,20 +158,6 @@ void get_local_chunk(long int n_points, int* local_size,
 
 void data_transfer(int world_size, int world_rank, int image_width, int image_height, 
                     int n_total_points, int* local_size, label** local_labels){
-    MPI_Datatype create_label_type() {
-        MPI_Datatype label_type;
-        int blocklengths[3] = {1, 1, 1};
-        MPI_Aint displacements[3];
-        MPI_Datatype types[3] = {MPI_INT, MPI_INT, MPI_INT};
-
-        displacements[0] = offsetof(label, x);
-        displacements[1] = offsetof(label, y);
-        displacements[2] = offsetof(label, labelll);
-
-        MPI_Type_create_struct(3, blocklengths, displacements, types, &label_type);
-        MPI_Type_commit(&label_type);
-        return label_type;
-    }
 
     MPI_Datatype MPI_LABEL = create_label_type();
     int old_local_size = *local_size;
@@ -217,20 +228,6 @@ void data_transfer(int world_size, int world_rank, int image_width, int image_he
     MPI_Type_free(&MPI_LABEL);
 
     
-}
-
-int compare_labels(const void* a, const void* b, void* thunk) {
-    const label* labelA = (const label*)a;
-    const label* labelB = (const label*)b;
-    
-    int image_width = *(int*)thunk;
-
-    int indexA = (labelA->y * image_width) + labelA->x;
-    int indexB = (labelB->y * image_width) + labelB->x;
-
-    if (indexA < indexB) return -1;
-    if (indexA > indexB) return 1;
-    return 0;
 }
 
 void reorder_and_print(int image_width, label* local_labels, int local_num_elements, 
