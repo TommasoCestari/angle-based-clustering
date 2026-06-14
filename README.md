@@ -88,10 +88,10 @@ This script uses the helper modules in python/utils/ to:
 
 Run the core ABC clustering algorithm using either the serial or the MPI implementation.
 
-Serial implementation:
+* Serial implementation:
 `make serial`
 
-MPI implementation:
+* MPI implementation:
 `make mpi`
 
 Both implementations process the input image and produce the clustering result as a .bin file in the data/ folder:
@@ -110,13 +110,13 @@ The script outptus
 
 data/output_clusters.tiff
 
-⸻
+---
 
 #### 4. Visualization
 
 Open the generated file in QGIS to visualize and explore the generated clusters over the geographic region.
 
-⸻
+---
 
 ## Complete Workflow
 
