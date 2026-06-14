@@ -51,11 +51,11 @@ You will need the following libraries. You can install them via pip:
 rasterio numpy sentinelhub python-dotenv
 
 
-Workflow & Usage
+## Workflow & Usage
 
 The data pipeline operates in four distinct phases:
 
-1. Data Fetching (If you don't want custome images you can skip this part, since in the data/ folder there are images ready to be used)
+#### 1. Data Fetching (If you don't want custome images you can skip this part, since in the data/ folder there are images ready to be used)
 
 First, retrieve the base Sentinel-2 imagery.
 
@@ -78,7 +78,7 @@ This script uses the helper modules in python/utils/ to:
 
 ⸻
 
-2. Clustering Execution
+#### 2. Clustering Execution
 
 Run the core ABC clustering algorithm using either the serial or the MPI implementation.
 
@@ -94,7 +94,7 @@ Both implementations process the input image and produce the clustering result a
 
 ⸻
 
-3. Format Conversion
+#### 3. Format Conversion
 
 The clustering output is stored as a binary vector. To visualize it geographically, convert it back into a GeoTIFF.
 
@@ -108,36 +108,54 @@ data/output_clusters.tiff
 
 ⸻
 
-4. Visualization
+#### 4. Visualization
 
 Open the generated file in QGIS to visualize and explore the generated clusters over the geographic region.
 
 ⸻
 
-Complete Workflow
+## Complete Workflow
+
+```text
 
 Fetch Sentinel-2 imagery
+
           │
           ▼
-    python/main.py
+
+python python/main.py
+
           │
           ▼
+
      data/input.tiff
+
           │
           ▼
+
  make serial / make mpi
+
           │
           ▼
+
   data/final_image.bin
+
           │
           ▼
+
 python python/from_vector_to_tiff.py
+
           │
           ▼
+
 data/output_clusters.tiff
+
           │
           ▼
+
       Open in QGIS
+
+```
 
 ⸻
 
