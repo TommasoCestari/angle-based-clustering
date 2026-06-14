@@ -1,6 +1,6 @@
 # Angle-based-clustering
 
-This repository contains an implementation of the Angle-Based Clustering (ABC) algorithm, applied to Sentinel-2 satellite imagery. It features both a standard serial implementation and a distributed-memory using MPI.
+This repository contains an implementation of the Angle-Based Clustering (ABC) algorithm for clustering Sentinel-2 satellite imagery. It includes both a serial C implementation and a distributed-memory parallel implementation using MPI.
 
 ## Directory Structure
 
@@ -161,5 +161,4 @@ data/output_clusters.tiff
 
 ```
 
-⸻
 
