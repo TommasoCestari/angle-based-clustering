@@ -82,7 +82,7 @@ This script uses the helper modules in python/utils/ to:
 * Compute additional vegetation and water indices.
 * Save the resulting multi-band GeoTIFF into the data/ directory.
 
-⸻
+---
 
 #### 2. Clustering Execution
 
@@ -96,7 +96,7 @@ MPI implementation:
 
 Both implementations process the input image and produce the clustering result as a .bin file in the data/ folder:
 
-⸻
+---
 
 #### 3. Format Conversion
 
