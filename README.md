@@ -62,13 +62,16 @@ First, retrieve the base Sentinel-2 imagery.
 Create a .env file in the project root containing your Sentinel Hub credentials:
 
 SH_CLIENT_ID=your_client_id
+
 SH_CLIENT_SECRET=your_client_secret
+
 SH_BASE_URL=https://sh.dataspace.copernicus.eu
+
 SH_TOKEN_URL=https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token
 
 Run the data fetching script:
 
-python/main.py
+'python/main.py'
 
 This script uses the helper modules in python/utils/ to:
 
@@ -82,13 +85,11 @@ This script uses the helper modules in python/utils/ to:
 
 Run the core ABC clustering algorithm using either the serial or the MPI implementation.
 
-Serial implementation
+Serial implementation:
+'make serial'
 
-make serial
-
-MPI implementation
-
-make mpi
+MPI implementation:
+'make mpi'
 
 Both implementations process the input image and produce the clustering result as a .bin file in the data/ folder:
 
@@ -100,7 +101,7 @@ The clustering output is stored as a binary vector. To visualize it geographical
 
 Run:
 
-python python/from_vector_to_tiff.py
+'python python/from_vector_to_tiff.py'
 
 The script outptus 
 
