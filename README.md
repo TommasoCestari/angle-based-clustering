@@ -35,6 +35,7 @@ Angle-Based Clustering (ABC) is designed to drastically reduce the runtime of tr
 
 ## Prerequisites
 
+#### Local environment setup 
 Before running the workflow, ensure you have the following installed on your system:
 
 **C / High-Performance Computing:**
@@ -49,6 +50,11 @@ Before running the workflow, ensure you have the following installed on your sys
 **Python Libraries:**
 You will need the following libraries. You can install them via pip:
 rasterio numpy sentinelhub python-dotenv
+
+#### HPC Cluster Environment Setup
+If you are running this workflow on the cluster, start by loading the necessary modules:
+ `module purge`
+ `module load mpi4py/3.1.4-gompi-2023a`
 
 
 ## Workflow & Usage
