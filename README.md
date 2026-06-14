@@ -24,6 +24,7 @@ This repository contains an implementation of the Angle-Based Clustering (ABC) a
    ├─ Makefile                # Build rules for the parallel version
    ├─ include/                # Header files adapted for MPI and parallel logic
    └─ src/                    # Source code for parallel clustering and assignment
+```
 
 ## The Algorithm
 Angle-Based Clustering (ABC) is designed to drastically reduce the runtime of traditional clustering methods by performing complex clustering computations on only a small fraction of the data using a three-step process:
