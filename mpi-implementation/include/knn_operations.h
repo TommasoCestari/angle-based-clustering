@@ -3,10 +3,14 @@
 #include <math.h>
 #include <stdbool.h>
 #include "kd_tree.h"
+#ifndef D
+    #define D 15
+#endif
 
 typedef struct {
     float max_angle;
     float mean_knn_dist;
+    float direction[D];
 } uma_results;
 
 size_t n_of_border_points(const point* points, size_t n_points, float percentile);

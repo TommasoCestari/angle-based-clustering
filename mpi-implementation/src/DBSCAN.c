@@ -272,8 +272,6 @@ void compute_all_directions(point* points, int n_points,
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    //size_t progress_interval = (n_points >= 100) ? n_points/100 : 1;
-
     for (size_t i = local_start; i < (local_start + local_size); i++){
     
         //Computing of the direction

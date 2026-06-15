@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     int width = 0;
     int height = 0;
-    double t0=0, t1=0, t2=0, t2_5=0, t3=0, t4=0, t4_5=0, t5=0, t6=0, t7=0, t7_5=0, t8=0, t9=0;
+    double t0=0, t1=0, t2=0, t3=0, t3_5=0, t4=0, t4_5=0, t5=0, t6=0, t7=0, t7_5=0, t8=0, t9=0;
     ImageTensor* img = NULL;
 
     // Tensorize image, the image is stored only in rank 0
@@ -116,11 +116,11 @@ int main(int argc, char *argv[]) {
     }
     
     // Add the max angle for every point
-    updated_max_angles(tree, points, n_points, k, D, &t2_5);
+    updated_max_angles(tree, points, n_points, k, D, &t3);
     if (world_rank == 0) {
-        t2_5 = t2_5 - t0; //Update max angles
-        t3 = MPI_Wtime() - t0; //AllGather max angles
-        printf(", [%02d:%05.2f]\n", (int)(t3/60), fmod(t3, 60.0));
+        t3 = t3 - t0; //Update max angles
+        t3_5 = MPI_Wtime() - t0; //AllGather max angles
+        printf(", [%02d:%05.2f]\n", (int)(t3_5/60), fmod(t3_5, 60.0));
         fflush(stdout);
     }
 
@@ -155,21 +155,12 @@ int main(int argc, char *argv[]) {
         printf("(5/10) Copied border points and found eps, [%02d:%05.2f]\n", (int)(t4/60), fmod(t4, 60.0)); 
         fflush(stdout);
     }
-
-    //Compute angles for dbscan
-    compute_all_directions(points, n_points, tree, k, D, &t4_5);
-    if (world_rank == 0) {
-        t4_5 = t4_5 - t0; //All directions
-        t5 = MPI_Wtime() - t0; //AllGather
-        printf(", [%02d:%05.2f]\n", (int)(t5/60), fmod(t5, 60.0)); 
-        fflush(stdout);
-    }
     
     //Assigns border points a label and returns the number of clusters found
     int num_clusters = dbscan(border_points, n_border_points, mult_eps * eps, min_pts); //Not parallelized
     if (world_rank == 0) {
-        t6 = MPI_Wtime() - t0; // DBSCAN
-        printf("(7/10) Dbscan completed, [%02d:%05.2f]\n", (int)(t6/60), fmod(t6, 60.0));
+        t5 = MPI_Wtime() - t0; // DBSCAN
+        printf("(6/10) Dbscan completed, [%02d:%05.2f]\n", (int)(t5/60), fmod(t5, 60.0));
         fflush(stdout);
     }
 
@@ -186,8 +177,8 @@ int main(int argc, char *argv[]) {
     //Create a kd-tree on the border points, a tree is needed for every rank
     kd_node *border_tree = kd_build(border_points, n_border_points, 0);
     if (world_rank == 0) { // Border tree time
-        t7 = MPI_Wtime() - t0; // Still >100 ms but we want to remove noise before the next heavy operation
-        printf("(8/10) Built kd-tree for border point, [%02d:%05.2f]\n", (int)(t7/60), fmod(t7, 60.0));   
+        t6 = MPI_Wtime() - t0; // Still >100 ms but we want to remove noise before the next heavy operation
+        printf("(7/10) Built kd-tree for border point, [%02d:%05.2f]\n", (int)(t7/60), fmod(t7, 60.0));   
         fflush(stdout);
     }
 
@@ -197,7 +188,7 @@ int main(int argc, char *argv[]) {
     label* local_labels = malloc(local_size * sizeof(label));
 
     non_border_points_assignment_2(points, border_tree, n_points, local_labels);
-    if (world_rank == 0) {t7_5 = MPI_Wtime() - t0;} // Non border points
+    if (world_rank == 0) {t7 = MPI_Wtime() - t0;} // Non border points
     data_transfer(world_size, world_rank, width, height, n_points, &local_size, &local_labels);
 
     for (int i = 0; i < local_size; i++) {
@@ -207,8 +198,8 @@ int main(int argc, char *argv[]) {
     }
     
     if (world_rank == 0) {
-        t8 = MPI_Wtime() - t0; // Non border points
-        printf("(9/10) Labeled all non border points, [%02d:%05.2f]\n", (int)(t8/60), fmod(t8, 60.0));; 
+        t7_5 = MPI_Wtime() - t0; // Non border points
+        printf("(8/10) Labeled all non border points, [%02d:%05.2f]\n", (int)(t8/60), fmod(t8, 60.0));; 
         fflush(stdout);
     }
     
@@ -221,15 +212,15 @@ int main(int argc, char *argv[]) {
 
     if (world_rank == 0) {
         //t7_5 = t7_5 - t0;
-        t9 = MPI_Wtime() - t0; // File printing
-        printf("(10/10) Exported the image in binary, [%02d:%05.2f]\n", (int)(t9/60), fmod(t9, 60.0));; 
+        t8 = MPI_Wtime() - t0; // File printing
+        printf("(9/10) Exported the image in binary, [%02d:%05.2f]\n", (int)(t9/60), fmod(t9, 60.0));; 
         fflush(stdout);
     }
 
-    // Final image creation, only done 1 time with rank 0
+    // Print time stamps of the csv file
     if (world_rank == 0) {
         log_results(csv_path, (int)n_points, k, mult_eps, min_pts, world_size,
-                    t1, t2, t2_5, t3, t4, t4_5, t5, t6, t7, t7_5, t8, t9, num_clusters, cpu_info);
+                    t1, t2, t3, t3_5, t4, t5, t6, t7, t7_5, t8, num_clusters, cpu_info);
         printf("Results saved to %s\n", csv_path);
     }
 
