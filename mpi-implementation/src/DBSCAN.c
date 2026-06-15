@@ -275,16 +275,7 @@ void compute_all_directions(point* points, int n_points,
     //size_t progress_interval = (n_points >= 100) ? n_points/100 : 1;
 
     for (size_t i = local_start; i < (local_start + local_size); i++){
-        
-        //Printing of progress
-        //if(world_rank == 0){
-        //    if ((i % progress_interval) == 0 || i == n_points - 1) {
-        //        float percent = (float)(i + 1) / n_points * 100.0f;
-        //        printf("\rCompute_all_directions: %.1f%% (%d/%d)", percent, i, n_points);
-        //        fflush(stdout); // Force the output to show immediately
-        //    }
-        //}
-
+    
         //Computing of the direction
         compute_point_direction(&points[i], tree, k, dims);
         for(int d = 0; d < dims; d++) direction[i * dims + d] = points[i].direction[d];
