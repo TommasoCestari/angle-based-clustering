@@ -13,6 +13,11 @@ typedef struct point{
     float *direction;
 } point;
 
+typedef struct label{
+    int x;
+    int y;
+    int labelll;
+} label;
 
 typedef struct kd_node {
     point point;

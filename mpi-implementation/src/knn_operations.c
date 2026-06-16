@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include "knn_operations.h"
 #include "kd_tree.h"
+#include "non_border_assigning.h"
 
 const float PI_F = 3.14159265358979323846f;
 
@@ -68,13 +69,9 @@ float vector_compute_angle(const float* vector_1, const float* vector_2, int dim
 
 //Compute the mean feature vector of the provided neighbors.
 void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float* vector_mean){
-    // Mean vector initialization
-    for (int d = 0; d < dims; d++) {
-        vector_mean[d] = 0.0f;
-    }
-
     // Do the mean for every dimention
     for (int d = 0; d < dims; d++){
+        vector_mean[d] = 0.0f;
         for (int i = 0; i < k; i++) {
             vector_mean[d] += neighbors[i].point_.v[d];
         }
@@ -100,6 +97,7 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
     float mean_vector[dims];
     for (int d = 0; d < dims; d++) {
         mean_vector[d] = vector_mean[d] - query_point->v[d];
+        query_point->direction[d] = mean_vector[d];
     }
     
     // Add the mean distance to the points for the esp in DBSCAN
@@ -109,7 +107,7 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
     }
     mean_distance = mean_distance/k;
     query_point->mean_knn_dist = mean_distance;
-
+    
     // Vectorization of the neighbors
     float neighbors_vector[k][dims];
     for (int d = 0; d < dims; d++){
@@ -128,30 +126,19 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
  * For each query point, compute the maximum angle between query_to_centroid vector
  * and its k nearest neighbors, store it in points[i].max_angle.
  */
-
-void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5, double* t2_6){
+void updated_max_angles(const kd_node* tree, point* points, size_t n_points, 
+                                            int k, int dims, double* t3){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    //Find the starting point(start[]) and the number of iterations(size[]) for every process
+    int local_size, local_start;
+    get_local_chunk(n_points, &local_size, &local_start);
+
     int size[world_size], start[world_size];
-    if (world_rank == 0) { //Let rank 0 find the start and n° of iterations
-        int remainder = n_points % world_size;
-        start[0] = 0;
-
-        for (int p = 0; p < world_size; p++){
-            if(p != 0) start[p] = start[p - 1] + size[p - 1];
-            size[p] = (int)n_points / world_size;
-            if (p < remainder) size[p]++;
-        }
-
-    }
-
-    //Send the array of results to the other processes
-    MPI_Bcast(size, world_size, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(start, world_size, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Allgather(&local_size, 1, MPI_INT, size, 1, MPI_INT, MPI_COMM_WORLD);
+    MPI_Allgather(&local_start, 1, MPI_INT, start, 1, MPI_INT, MPI_COMM_WORLD);
 
     float angles[k];
     uma_results *results = malloc(n_points * sizeof(uma_results));
@@ -161,8 +148,7 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
     }
 
     //Every rank calculates its part
-    for (size_t i = start[world_rank];
-     i < (start[world_rank] + size[world_rank]); i++) {
+    for (size_t i = local_start; i < (local_start + local_size); i++) {
 
         vector_angle_result(&points[i], tree, k, dims, angles);
 
@@ -174,13 +160,17 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
 
         results[i].max_angle = max;
         results[i].mean_knn_dist = points[i].mean_knn_dist;
+
+        for (int d = 0; d < dims; d++){
+            results[i].direction[d] = points[i].direction[d];
+        }
     }
-    *t2_5 = MPI_Wtime();
+    *t3 = MPI_Wtime();
 
     MPI_Datatype MPI_RESULT;
-    MPI_Type_contiguous(2, MPI_FLOAT, &MPI_RESULT);
+    MPI_Type_contiguous(2+dims, MPI_FLOAT, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
-
+    
     //Every rank sends the part that it did to every other rank
     //send only the local chunk starting at start[world_rank]
     MPI_Allgatherv(
@@ -188,19 +178,23 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int
         MPI_RESULT, results, size,
         start, MPI_RESULT, MPI_COMM_WORLD
     );
-    *t2_6 = MPI_Wtime();
+
     //Now that the arrays contain all the data every rank copies it to itself
     for (size_t i = 0; i < n_points; i++) {
         points[i].max_angle = results[i].max_angle;
         points[i].mean_knn_dist = results[i].mean_knn_dist;
+        for (int d = 0; d < dims; d++){
+            points[i].direction[d] = results[i].direction[d];
+        }
     }
 
     MPI_Type_free(&MPI_RESULT);
     free(results);
 
     if (world_rank == 0){
-        printf("(3/11) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);
+        printf("(3/10) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);
         fflush(stdout); // Force the output to show immediately
     }
 
 }
+

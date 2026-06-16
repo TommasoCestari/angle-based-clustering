@@ -3,10 +3,14 @@
 #include <math.h>
 #include <stdbool.h>
 #include "kd_tree.h"
+#ifndef D
+    #define D 15
+#endif
 
 typedef struct {
     float max_angle;
     float mean_knn_dist;
+    float direction[D];
 } uma_results;
 
 size_t n_of_border_points(const point* points, size_t n_points, float percentile);
@@ -23,7 +27,7 @@ void vector_mean_of_neighbors(const knn_item* neighbors , int k, int dims, float
 
 void vector_angle_result(point* query_point, const kd_node* tree, int k, int dims, float *angles);
 
-void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5, double* t2_6);
+void updated_max_angles(const kd_node* tree, point* points, size_t n_points, int k, int dims, double* t2_5);
 
 #endif
 
