@@ -9,7 +9,6 @@ This repository contains an implementation of the Angle-Based Clustering (ABC) a
 ├─ README.md                  # Project overview (this file)
 ├─ Makefile                   # Top-level orchestrator for building serial and MPI versions
 ├─ .env                       # Environment variables (e.g., Sentinel Hub credentials)
-├─ job.pbs                    # PBS script for basic cluster job submission
 ├─ job_n_cpu.pbs              # PBS script for scaling MPI jobs across multiple CPUs
 ├─ data/                      # Input TIFFs, output binaries, CSV results, and final clusters
 ├─ python/                    # Python scripts for data pipeline
