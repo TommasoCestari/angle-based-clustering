@@ -4,8 +4,8 @@ SRC_DIR = src
 INC_DIR = include
 
 CC = mpicc
-CFLAGS = -Iinclude
-LDFLAGS = -ltiff -lm
+CFLAGS = -Iinclude -fopenmp
+LDFLAGS = -ltiff -lm -fopenmp
 RM = rm -f
 
 # Object files

@@ -5,6 +5,7 @@
 #include "knn_operations.h"
 #include "kd_tree.h"
 #include "non_border_assigning.h"
+#include <omp.h>
 
 const float PI_F = 3.14159265358979323846f;
 
@@ -127,7 +128,7 @@ void vector_angle_result(point* query_point, const kd_node* tree, int k, int dim
  * and its k nearest neighbors, store it in points[i].max_angle.
  */
 void updated_max_angles(const kd_node* tree, point* points, size_t n_points, 
-                                            int k, int dims, double* t3){
+                        int k, int dims, double* t3){
 
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -140,15 +141,18 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points,
     MPI_Allgather(&local_size, 1, MPI_INT, size, 1, MPI_INT, MPI_COMM_WORLD);
     MPI_Allgather(&local_start, 1, MPI_INT, start, 1, MPI_INT, MPI_COMM_WORLD);
 
-    float angles[k];
     uma_results *results = malloc(n_points * sizeof(uma_results));
     if (!results) {
         printf("ERROR: [updated_max_angles] malloc failed in updated_max_angles\n"); fflush(stdout);
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    //Every rank calculates its part
+    // Every rank calculates its part using multiple threads
+    #pragma omp parallel for schedule(dynamic)
     for (size_t i = local_start; i < (local_start + local_size); i++) {
+        
+        // Moved inside the loop to ensure every thread gets its own private copy
+        float angles[k]; 
 
         vector_angle_result(&points[i], tree, k, dims, angles);
 
@@ -171,15 +175,16 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points,
     MPI_Type_contiguous(2+dims, MPI_FLOAT, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
     
-    //Every rank sends the part that it did to every other rank
-    //send only the local chunk starting at start[world_rank]
+    // Every rank sends the part that it did to every other rank
+    // Send only the local chunk starting at start[world_rank]
     MPI_Allgatherv(
         &results[start[world_rank]], size[world_rank],
         MPI_RESULT, results, size,
         start, MPI_RESULT, MPI_COMM_WORLD
     );
 
-    //Now that the arrays contain all the data every rank copies it to itself
+    // Now that the arrays contain all the data, copy it using multiple threads
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < n_points; i++) {
         points[i].max_angle = results[i].max_angle;
         points[i].mean_knn_dist = results[i].mean_knn_dist;
@@ -192,9 +197,8 @@ void updated_max_angles(const kd_node* tree, point* points, size_t n_points,
     free(results);
 
     if (world_rank == 0){
-        printf("(3/10) Updated_max_angles: 100%% (%zu/%zu)", n_points, n_points);
+        printf("(3/10) Updated_max_angles: 100%% (%zu/%zu)\n", n_points, n_points);
         fflush(stdout); // Force the output to show immediately
     }
-
 }
 

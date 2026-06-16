@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -l walltime=00:20:00
+#PBS -q shortCPUQ
+#PBS -N out
+#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
+
+module purge
+module load mpi4py/3.1.4-gompi-2023a
+
+# Ensure OpenMP knows to use 64 threads
+export OMP_NUM_THREADS=1
+
+K_VAL=5
+EPS_VAL=1.3
+MINP_VAL=7
+CPU_INFO=$(grep -m 1 "model name" /proc/cpuinfo | cut -d: -f2 | tr -d ',' | xargs)
+
+# Tell mpirun to map 1 process to the node, allowing 64 cpus per permit
+mpirun -np 1 --map-by node:PE=1 --hostfile $PBS_NODEFILE /home/andreas.chini/my_programs/git/angle-based-clustering/main_mpi \
+    $K_VAL $EPS_VAL $MINP_VAL "$CPU_INFO" \
+    /home/andreas.chini/my_programs/git/csv_files/results_${K_VAL}_${EPS_VAL}_${MINP_VAL}.csv
