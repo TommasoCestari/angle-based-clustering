@@ -39,6 +39,24 @@ int main(int argc, char *argv[]) {
     char* cpu_info = argv[4]; 
     char* csv_path = argv[5];
 
+    const char* target_cpu = "Intel(R) Xeon(R) Gold 6418H";
+
+    if (world_rank == 0) {
+        // Check if cpu_info is NULL to prevent segmentation faults
+        if (cpu_info == NULL) {
+            fprintf(stderr, "Error: CPU info argument is missing (NULL).\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+
+        // Compare the strings. strcmp returns 0 if they are identical.
+        if (strcmp(cpu_info, target_cpu) != 0) {
+            fprintf(stderr, "Error: Unauthorized hardware.\n");
+            fprintf(stderr, "Expected: %s\n", target_cpu);
+            fprintf(stderr, "Found:    %s\n", cpu_info);
+            MPI_Abort(MPI_COMM_WORLD, 1); 
+        }
+    }
+    
     int width = 0;
     int height = 0;
     double t0=0, t1=0, t2=0, t3=0, t3_5=0, t4=0, t4_5=0, t5=0, t6=0, t7=0, t7_5=0, t8=0, t9=0;
