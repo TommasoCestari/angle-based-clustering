@@ -5,6 +5,5 @@ __pycache__/
 .venv/
 
 # Input images
-data/*.tiff
 data/*.aux.xml
 data/*.xml
