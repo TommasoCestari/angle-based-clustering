@@ -67,7 +67,7 @@ The data pipeline operates in four distinct phases:
 
 First, retrieve the base Sentinel-2 imagery.
 
-Create a .env file in the project root containing your Sentinel Hub credentials:
+Fill the .env file in the repo with your Sentinel Hub credentials:
 ```env
 
 SH_CLIENT_ID=your_client_id
