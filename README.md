@@ -63,7 +63,7 @@ module load mpi4py/3.1.4-gompi-2023a
 
 The data pipeline operates in four distinct phases:
 
-#### 1. Data Fetching (If you don't want custome images you can skip this part, since in the data/ folder there are images ready to be used)
+#### 1. Data Fetching (If you don't want custome images you can skip this part, since in the data/ folder there is an image ready to be used)
 
 First, retrieve the base Sentinel-2 imagery.
 
