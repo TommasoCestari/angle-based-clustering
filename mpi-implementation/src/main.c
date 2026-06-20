@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     // Tensorize image, the image is stored only in rank 0
     if (world_rank == 0) {
         t0 = MPI_Wtime();
-        img = load_tiff_as_tensor("/home/andreas.chini/my_programs/git/angle-based-clustering/data/sentinel_tensor_10m.tiff", world_rank);
+        img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff", world_rank);
         //img = load_tiff_as_tensor("data/sentinel_tensor_original_small.tiff", world_rank);
         if (!img) {
             printf("ERROR: [main] Error loading TIFF\n");
@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
     char img_path[256];
     //sprintf(img_path, "data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
     //sprintf(img_path, "/home/andreas.chini/my_programs/git/angle-based-clustering/data/img_k%d_e%.1f_m%d.bin", k, mult_eps, min_pts);
-    sprintf(img_path, "/home/andreas.chini/my_programs/git/angle-based-clustering/data/final_image.bin");
+    sprintf(img_path, "data/final_image.bin");
     reorder_and_print(width, local_labels, local_size, img_path);
 
     //non_border_points_assignment(points, border_tree, n_points, width, img_path, &t7_5); 

@@ -16,7 +16,7 @@
 module purge
 module load mpi4py/3.1.4-gompi-2023a
 
-#$PBS_JOBNAME.o$PBS_JOBID.txt
+cd $PBS_O_WORKDIR
 
 echo "=== Starting PBS job ==="
 echo "Job ID: $PBS_JOBID"
@@ -30,13 +30,12 @@ MINP_VAL=7
 CPU_INFO=$(grep -m 1 "model name" /proc/cpuinfo | cut -d: -f2 | tr -d ',' | xargs)
 
 # Run your program
-
 NP=$(wc -l < $PBS_NODEFILE)
 
 mpirun -np $NP --hostfile $PBS_NODEFILE \
-    /home/andreas.chini/my_programs/git/angle-based-clustering/main_mpi \
-    $K_VAL $EPS_VAL $MINP_VAL "$CPU_INFO"\
-    /home/andreas.chini/my_programs/git/csv_files/results_${K_VAL}_${EPS_VAL}_${MINP_VAL}.csv
+    ./main_mpi \
+    $K_VAL $EPS_VAL $MINP_VAL "$CPU_INFO" \
+    data/results_${K_VAL}_${EPS_VAL}_${MINP_VAL}.csv
 
 echo ""
 echo "Job finished at: $(date)"
