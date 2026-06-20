@@ -190,11 +190,26 @@ void save_final_image(const char* filename, int* finalImage, size_t n_points) {
         perror("Cannot open file to save finalImage");
         return;
     }
-    // save as 16-bit unsigned integers
+
+    // 1. Find the total number of clusters by locating the maximum cluster ID
+    int max_cluster_id = -1;
     for (size_t i = 0; i < n_points; i++) {
-        uint16_t val = (finalImage[i] < 0) ? 0 : (uint16_t)(finalImage[i] + 1);
-        fwrite(&val, sizeof(uint16_t), 1, f);
+        if (finalImage[i] > max_cluster_id) {
+            max_cluster_id = finalImage[i];
+        }
     }
+    int num_clusters = max_cluster_id + 1; 
+
+    // 2. Transform the noise (negative values) into the highest value, keep clusters starting at 0
+    for (size_t i = 0; i < n_points; i++) {
+        if (finalImage[i] < 0) {
+            finalImage[i] = num_clusters;
+        }
+    }
+
+    // 3. Save the entire memory block natively as 32-bit integers
+    fwrite(finalImage, sizeof(int), n_points, f);
+    
     fclose(f);
 }
 
